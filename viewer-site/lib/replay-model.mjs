@@ -71,6 +71,14 @@ export function validateReplayFixture(fixture) {
   if (!fixture || fixture.schema_version !== 1 || !Array.isArray(fixture.events)) return false;
   if (!["ja", "en", "ko"].includes(fixture.source?.language)) return false;
   if (!["ja", "en", "ko"].includes(fixture.source?.target_language)) return false;
+  if (fixture.audio) {
+    if (typeof fixture.audio.url !== "string" || !fixture.audio.url.startsWith("/")) return false;
+    if (fixture.audio.url.includes("://")) return false;
+    if (!Number.isFinite(fixture.audio.duration_ms) || fixture.audio.duration_ms <= 0) return false;
+    if (!/^[a-f0-9]{64}$/.test(fixture.audio.sha256 ?? "")) return false;
+    if (fixture.audio.kind !== "consented_scripted_demo") return false;
+    if (fixture.audio.private_meeting_audio !== false) return false;
+  }
   const segmentIds = new Set(
     fixture.events
       .filter((event) => event.type === "final_transcript")

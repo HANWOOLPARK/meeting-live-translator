@@ -11,11 +11,11 @@
     "language": "ko",
     "target_language": "en",
     "audio_retained": false,
-    "source_duration_ms": 88560
+    "source_duration_ms": 73127
   },
   "disclosure": {
-    "en": "Replay of a real API run using a fictional meeting. Audio was not retained under the product privacy policy.",
-    "ko": "개인정보가 없는 가상 회의를 실제 API로 실행한 Replay입니다. 제품 개인정보 보호 정책에 따라 오디오는 보관하지 않았습니다."
+    "en": "Replay of a real API run using a fictional meeting. A consented scripted demo recording is bundled separately from local session storage.",
+    "ko": "개인정보가 없는 가상 회의를 실제 API로 실행한 Replay입니다. 동의받은 데모 대본 녹음은 로컬 세션 저장소와 분리해 제공합니다."
   },
   "pipeline": [
     {
@@ -40,164 +40,141 @@
     }
   ],
   "metrics": {
-    "final_segments": 13,
-    "translated_segments": 13,
-    "context_corrected_segments": 6,
+    "final_segments": 5,
+    "translated_segments": 5,
+    "context_corrected_segments": 5,
     "translation_latency_ms": {
-      "median": 843,
-      "p95_nearest": 1172,
-      "max": 1265
+      "median": 1078,
+      "p95_nearest": 1141,
+      "max": 1141
     },
-    "radar_items": 10,
-    "radar_revisions": 4,
-    "evidence_references": 10,
+    "radar_items": 12,
+    "radar_revisions": 2,
+    "evidence_references": 12,
     "evidence_valid": true
   },
-  "duration_ms": 112637,
+  "duration_ms": 84837,
   "events": [
     {
-      "at_ms": 10000,
+      "at_ms": 11537,
       "type": "final_transcript",
       "segment_id": "segment-001",
       "language": "ko",
-      "text": "오늘 회의에서는 아스터 브리지 베타 공개 일정, 시험 도입 회사 수, 화면 디자인, 비용과 법무 과제를 확인하겠습니다."
+      "text": "오늘 회의에서는 아스터브리지 배타 공개 일정 시험 도입 회사 수, 화면 디자인, 비용과 법무 과제를 확인하겠습니다 시험과 법무 확인 시간을 확보해 하기 위해 기타 공개 일은 팔 월 이 십 일로 확정합니다"
     },
     {
-      "at_ms": 15293,
+      "at_ms": 19283,
       "type": "context_normalization",
       "segment_id": "segment-001",
       "changed": true,
-      "normalized_text": "오늘 회의에서는 Aster Bridge 베타 공개 일정, 시험 도입 회사 수, 화면 디자인, 비용과 법무 과제를 확인하겠습니다.",
+      "normalized_text": "오늘 회의에서는 아스터브리지 배타 공개 일정 시험 도입 회사 수, 화면 디자인, 비용과 법무 과제를 확인하겠습니다 시험과 법무 확인 시간을 확보해 하기 위해 기타 공개 일은 August 20로 확정합니다",
       "matches": [
         {
           "category": "term",
-          "from": "아스터 브리지",
-          "to": "Aster Bridge"
+          "from": "팔 월 이 십 일",
+          "to": "August 20"
         }
       ]
     },
     {
-      "at_ms": 16564,
+      "at_ms": 20408,
       "type": "translation",
       "segment_id": "segment-001",
-      "text": "In today's meeting, we will confirm the Aster Bridge beta release schedule, the number of pilot companies, screen design, and cost and legal tasks.",
+      "text": "In today's meeting, we will review the beta release schedule for AsterBridge, the number of pilot companies, screen design, and legal issues. To secure time for testing and legal review, the other release date is confirmed as August 20.",
       "provider": "Gemini",
       "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 1265
+      "latency_ms": 1125
     },
     {
-      "at_ms": 17280,
+      "at_ms": 31827,
       "type": "final_transcript",
       "segment_id": "segment-002",
       "language": "ko",
-      "text": "부하 시험과 법무 확인 시간을 확보하기 위해 공개일은 팔 월 이 십 일로 확정합니다."
+      "text": "시험 도입은 지원 여력을 고려해 세 개 회사부터 시작하기로 결정했습니다 민화님은 후보 회사의 참여 여부를 칠 월 이 십 이 일 오후 다섯 시까지 확인 해주세요 네 제가 그때까지 세 회사의 결과를 공유하겠습니다 화면 디자인은 테스트 점수가 높았던 B안을 정식으로 채택합니다"
     },
     {
-      "at_ms": 19693,
+      "at_ms": 35459,
       "type": "context_normalization",
       "segment_id": "segment-002",
-      "changed": false,
-      "normalized_text": "부하 시험과 법무 확인 시간을 확보하기 위해 공개일은 팔 월 이 십 일로 확정합니다.",
-      "matches": []
-    },
-    {
-      "at_ms": 20323,
-      "type": "translation",
-      "segment_id": "segment-002",
-      "text": "To ensure enough time for load testing and legal review, we are confirming the release date as August 20th.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 641
-    },
-    {
-      "at_ms": 23340,
-      "type": "final_transcript",
-      "segment_id": "segment-003",
-      "language": "ko",
-      "text": "시험 도입은 지원 여력을 고려해 세 개 회사부터 시작하기로 결정했습니다."
-    },
-    {
-      "at_ms": 25727,
-      "type": "context_normalization",
-      "segment_id": "segment-003",
       "changed": true,
-      "normalized_text": "시험 도입은 지원 여력을 고려해 three companies부터 시작하기로 결정했습니다.",
+      "normalized_text": "시험 도입은 지원 여력을 고려해 three companies부터 시작하기로 결정했습니다 민화님은 후보 회사의 참여 여부를 July 22 at 5:00 PM까지 확인 해주세요 네 제가 그때까지 three companies의 결과를 공유하겠습니다 화면 디자인은 테스트 점수가 높았던 Design B을 정식으로 채택합니다",
       "matches": [
         {
           "category": "term",
           "from": "세 개 회사",
           "to": "three companies"
+        },
+        {
+          "category": "term",
+          "from": "칠 월 이 십 이 일 오후 다섯 시",
+          "to": "July 22 at 5:00 PM"
+        },
+        {
+          "category": "term",
+          "from": "B안",
+          "to": "Design B"
         }
       ]
     },
     {
-      "at_ms": 26905,
-      "type": "translation",
+      "at_ms": 36247,
+      "type": "final_transcript",
       "segment_id": "segment-003",
-      "text": "We have decided to start the pilot implementation with three companies, considering our support capacity.",
+      "language": "ko",
+      "text": "박준호 님은 오늘 안에 일정표와 화면명세서를 업데이트 해주세요."
+    },
+    {
+      "at_ms": 36599,
+      "type": "translation",
+      "segment_id": "segment-002",
+      "text": "We have decided to start the pilot implementation with three companies, considering our support capacity. Min-hwa, please confirm whether the candidate companies will participate by July 22 at 5:00 PM. Yes, I will share the results for the three companies by then. For the screen design, we are officially adopting Design B, which had high test scores.",
       "provider": "Gemini",
       "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 1172
+      "latency_ms": 1141
     },
     {
-      "at_ms": 30040,
-      "type": "final_transcript",
-      "segment_id": "segment-004",
-      "language": "ko",
-      "text": "김민아 님은 후보 회사에 참여 여부를 7월 이 십 이 일 오후 다섯 시까지 확인해 주세요."
-    },
-    {
-      "at_ms": 33928,
+      "at_ms": 38497,
       "type": "context_normalization",
-      "segment_id": "segment-004",
+      "segment_id": "segment-003",
       "changed": true,
-      "normalized_text": "Mina Kim 님은 후보 회사에 참여 여부를 7월 이 십 이 일 오후 다섯 시까지 확인해 주세요.",
+      "normalized_text": "Junho Park은 오늘 안에 일정표와 화면명세서를 업데이트 해주세요.",
       "matches": [
         {
           "category": "person",
-          "from": "김민아",
-          "to": "Mina Kim"
+          "from": "박준호 님",
+          "to": "Junho Park"
         }
       ]
     },
     {
-      "at_ms": 34755,
+      "at_ms": 39116,
       "type": "translation",
-      "segment_id": "segment-004",
-      "text": "Mina Kim, please confirm by 5:00 PM on July 22 whether the candidate companies will participate.",
+      "segment_id": "segment-003",
+      "text": "Junho Park, please update the schedule and the screen specifications by the end of today.",
       "provider": "Gemini",
       "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 828
+      "latency_ms": 610
     },
     {
-      "at_ms": 35010,
-      "type": "final_transcript",
-      "segment_id": "segment-005",
-      "language": "ko",
-      "text": "네, 제가 그때까지 새 회사에 확인하고 결과를 공유하겠습니다."
-    },
-    {
-      "at_ms": 38866,
-      "type": "context_normalization",
-      "segment_id": "segment-005",
-      "changed": true,
-      "normalized_text": "네, 제가 그때까지 three companies에 확인하고 결과를 공유하겠습니다.",
-      "matches": [
-        {
-          "category": "term",
-          "from": "새 회사",
-          "to": "three companies"
-        }
-      ]
-    },
-    {
-      "at_ms": 39221,
+      "at_ms": 43249,
       "type": "radar_update",
       "items": [
         {
           "item_id": "radar-001",
           "category": "decision",
-          "text": "Set the Aster Bridge release date for August 20.",
+          "text": "The alternate release date is confirmed as August 20.",
+          "assignee": null,
+          "due_date": null,
+          "review_status": "suggested",
+          "lifecycle_status": "active",
+          "evidence_segment_ids": [
+            "segment-001"
+          ]
+        },
+        {
+          "item_id": "radar-002",
+          "category": "decision",
+          "text": "The pilot implementation will start with three companies.",
           "assignee": null,
           "due_date": null,
           "review_status": "suggested",
@@ -207,285 +184,182 @@
           ]
         },
         {
-          "item_id": "radar-002",
+          "item_id": "radar-003",
           "category": "decision",
-          "text": "Start the pilot implementation with three companies.",
+          "text": "Design B is officially adopted for the screen design.",
           "assignee": null,
           "due_date": null,
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-003"
+            "segment-002"
           ]
         },
         {
-          "item_id": "radar-003",
+          "item_id": "radar-004",
           "category": "action_item",
           "text": "Confirm whether the candidate companies will participate.",
-          "assignee": "Mina Kim",
+          "assignee": "Min-hwa",
           "due_date": "July 22 at 5:00 PM",
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-004"
-          ]
-        }
-      ]
-    },
-    {
-      "at_ms": 39761,
-      "type": "translation",
-      "segment_id": "segment-005",
-      "text": "Yes, I will check with the three companies by then and share the results.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 906
-    },
-    {
-      "at_ms": 41720,
-      "type": "final_transcript",
-      "segment_id": "segment-006",
-      "language": "ko",
-      "text": "화면 디자인은 사용자 테스트 점수가 높았던 비안을 정해 정식으로 채택합니다."
-    },
-    {
-      "at_ms": 44210,
-      "type": "context_normalization",
-      "segment_id": "segment-006",
-      "changed": true,
-      "normalized_text": "화면 디자인은 사용자 테스트 점수가 높았던 Design B을 정해 정식으로 채택합니다.",
-      "matches": [
-        {
-          "category": "term",
-          "from": "비안",
-          "to": "Design B"
-        }
-      ]
-    },
-    {
-      "at_ms": 44929,
-      "type": "translation",
-      "segment_id": "segment-006",
-      "text": "For the screen design, we have officially decided to adopt Design B, which received high user test scores.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 704
-    },
-    {
-      "at_ms": 47430,
-      "type": "final_transcript",
-      "segment_id": "segment-007",
-      "language": "ko",
-      "text": "박준호 님은 오늘 안에 일정표와 하면 명세서를 업데이트해 주세요."
-    },
-    {
-      "at_ms": 49855,
-      "type": "context_normalization",
-      "segment_id": "segment-007",
-      "changed": true,
-      "normalized_text": "Junho Park 님은 오늘 안에 일정표와 screen specification를 업데이트해 주세요.",
-      "matches": [
-        {
-          "category": "person",
-          "from": "박준호",
-          "to": "Junho Park"
-        },
-        {
-          "category": "term",
-          "from": "하면 명세서",
-          "to": "screen specification"
-        }
-      ]
-    },
-    {
-      "at_ms": 50671,
-      "type": "translation",
-      "segment_id": "segment-007",
-      "text": "Junho Park, please update the schedule and screen specification by the end of today.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 813
-    },
-    {
-      "at_ms": 54570,
-      "type": "final_transcript",
-      "segment_id": "segment-008",
-      "language": "ko",
-      "text": "추가 번역 서버가 포함된 수정 견적서는 칠 월 이 십 일 일 오후 세 시까지 제출하겠습니다."
-    },
-    {
-      "at_ms": 56999,
-      "type": "context_normalization",
-      "segment_id": "segment-008",
-      "changed": false,
-      "normalized_text": "추가 번역 서버가 포함된 수정 견적서는 칠 월 이 십 일 일 오후 세 시까지 제출하겠습니다.",
-      "matches": []
-    },
-    {
-      "at_ms": 57848,
-      "type": "translation",
-      "segment_id": "segment-008",
-      "text": "I will submit the revised quote including the additional translation server by 3:00 PM on July 21st.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 843
-    },
-    {
-      "at_ms": 61590,
-      "type": "final_transcript",
-      "segment_id": "segment-009",
-      "language": "ko",
-      "text": "다만 정확한 월서버 비용은 공급업체에 확인 중이라 아직 결정하지 못했습니다."
-    },
-    {
-      "at_ms": 63369,
-      "type": "radar_update",
-      "items": [
-        {
-          "item_id": "radar-004",
-          "category": "decision",
-          "text": "Adopt Design B as the official screen design.",
-          "assignee": null,
-          "due_date": null,
-          "review_status": "suggested",
-          "lifecycle_status": "active",
-          "evidence_segment_ids": [
-            "segment-006"
+            "segment-002"
           ]
         },
         {
           "item_id": "radar-005",
           "category": "action_item",
-          "text": "Submit the revised quote including the additional translation server.",
+          "text": "Share the results for the three companies.",
           "assignee": "TBD",
-          "due_date": "July 21 at 3:00 PM",
+          "due_date": "July 22 at 5:00 PM",
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-008"
+            "segment-002"
+          ]
+        },
+        {
+          "item_id": "radar-006",
+          "category": "action_item",
+          "text": "Update the schedule and screen specifications.",
+          "assignee": "Junho Park",
+          "due_date": "End of today",
+          "review_status": "suggested",
+          "lifecycle_status": "active",
+          "evidence_segment_ids": [
+            "segment-003"
           ]
         }
       ]
     },
     {
-      "at_ms": 64017,
-      "type": "context_normalization",
-      "segment_id": "segment-009",
-      "changed": false,
-      "normalized_text": "다만 정확한 월서버 비용은 공급업체에 확인 중이라 아직 결정하지 못했습니다.",
-      "matches": []
-    },
-    {
-      "at_ms": 64931,
-      "type": "translation",
-      "segment_id": "segment-009",
-      "text": "However, the exact monthly server cost is still being confirmed with the supplier, so it has not been decided yet.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 907
-    },
-    {
-      "at_ms": 66560,
+      "at_ms": 49237,
       "type": "final_transcript",
-      "segment_id": "segment-010",
+      "segment_id": "segment-004",
       "language": "ko",
-      "text": "해외 이용 약관은 법무팀이 칠 월 이 십 삼 일 정오까지 확인합니다."
+      "text": "번역 서버가 포함된 수정 견적서는 칠 월 이 십 일 일 오후 세 시까지 제출하겠습니다 다만 전화 월 서버 비용은 구 업체에 확인중이라 아직 결정하지 못했습니다."
     },
     {
-      "at_ms": 69100,
+      "at_ms": 57395,
       "type": "context_normalization",
-      "segment_id": "segment-010",
-      "changed": false,
-      "normalized_text": "해외 이용 약관은 법무팀이 칠 월 이 십 삼 일 정오까지 확인합니다.",
-      "matches": []
+      "segment_id": "segment-004",
+      "changed": true,
+      "normalized_text": "번역 서버가 포함된 수정 견적서는 칠 월 이 십 일 일 오후 세 시까지 제출하겠습니다 다만 exact monthly server cost은 구 업체에 확인중이라 아직 결정하지 못했습니다.",
+      "matches": [
+        {
+          "category": "term",
+          "from": "전화 월 서버 비용",
+          "to": "exact monthly server cost"
+        }
+      ]
     },
     {
-      "at_ms": 69831,
+      "at_ms": 58298,
       "type": "translation",
-      "segment_id": "segment-010",
-      "text": "The legal team will review the overseas terms of service by noon on July 23rd.",
+      "segment_id": "segment-004",
+      "text": "I will submit the revised quote including the translation server by 3:00 PM on July 21st, but the exact monthly server cost is still being confirmed with the former vendor, so it has not been decided yet.",
       "provider": "Gemini",
       "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 735
+      "latency_ms": 906
     },
     {
-      "at_ms": 74760,
+      "at_ms": 73127,
       "type": "final_transcript",
-      "segment_id": "segment-011",
+      "segment_id": "segment-005",
       "language": "ko",
-      "text": "영어 지원은 자막만 제공하는 경우와 화면, 전체를 영어로 바꾸는 경우의 작업량을 비교해 보겠습니다."
+      "text": "해외 이용 약관은 법무팀이 칠 월 이 십 삼 일 정오까지 확인합니다 영어 지원은 자막만 제공하는 경우와 화면 전체를 영어로 바꾸는 경우의 작업량을 비교해 보겠습니다 제품의 공식 영문 이름과 주말 지원 담당자는 오늘 결정하지 않고 다음 회사에서 계속 논의하겠습니다 다음 진척 회의는 월 이 십 사 일 오전 열 시 입니다"
     },
     {
-      "at_ms": 77241,
+      "at_ms": 75318,
       "type": "context_normalization",
-      "segment_id": "segment-011",
-      "changed": false,
-      "normalized_text": "영어 지원은 자막만 제공하는 경우와 화면, 전체를 영어로 바꾸는 경우의 작업량을 비교해 보겠습니다.",
-      "matches": []
+      "segment_id": "segment-005",
+      "changed": true,
+      "normalized_text": "overseas terms of service 법무팀이 July 23 at noon까지 확인합니다 English localization은 자막만 제공하는 경우와 화면 전체를 영어로 바꾸는 경우의 작업량을 비교해 보겠습니다 the official English product name과 the weekend support owner will not be decided today next meeting에서 계속 논의하겠습니다 다음 진척 회의는 월 이 십 사 일 오전 열 시 입니다",
+      "matches": [
+        {
+          "category": "term",
+          "from": "해외 이용 약관은",
+          "to": "overseas terms of service"
+        },
+        {
+          "category": "term",
+          "from": "칠 월 이 십 삼 일 정오",
+          "to": "July 23 at noon"
+        },
+        {
+          "category": "term",
+          "from": "영어 지원",
+          "to": "English localization"
+        },
+        {
+          "category": "term",
+          "from": "제품의 공식 영문 이름",
+          "to": "the official English product name"
+        },
+        {
+          "category": "term",
+          "from": "주말 지원 담당자는 오늘 결정하지 않고",
+          "to": "the weekend support owner will not be decided today"
+        },
+        {
+          "category": "term",
+          "from": "다음 회사",
+          "to": "next meeting"
+        }
+      ]
     },
     {
-      "at_ms": 78121,
+      "at_ms": 76386,
       "type": "translation",
-      "segment_id": "segment-011",
-      "text": "I will compare the workload between providing English support only for subtitles and switching the entire screen and interface to English.",
+      "segment_id": "segment-005",
+      "text": "The legal team will review the overseas terms of service by July 23 at noon. For English localization, I will compare the workload of providing subtitles only versus changing the entire screen to English. The official English product name and the weekend support owner will not be decided today; we will continue to discuss them in the next meeting. The next progress meeting is on the 24th at 10:00 AM.",
       "provider": "Gemini",
       "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 875
+      "latency_ms": 1078
     },
     {
-      "at_ms": 83720,
-      "type": "final_transcript",
-      "segment_id": "segment-012",
-      "language": "ko",
-      "text": "제품의 공식 영문 이름과 주말 지원 담당자는 오늘 결정하지 않고 다음 회의에서 계속 논의하겠습니다."
-    },
-    {
-      "at_ms": 86199,
-      "type": "context_normalization",
-      "segment_id": "segment-012",
-      "changed": false,
-      "normalized_text": "제품의 공식 영문 이름과 주말 지원 담당자는 오늘 결정하지 않고 다음 회의에서 계속 논의하겠습니다.",
-      "matches": []
-    },
-    {
-      "at_ms": 87071,
-      "type": "translation",
-      "segment_id": "segment-012",
-      "text": "We will not decide on the official English name of the product or the weekend support staff today, and will continue the discussion in the next meeting.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 859
-    },
-    {
-      "at_ms": 87758,
+      "at_ms": 83637,
       "type": "radar_update",
       "items": [
         {
-          "item_id": "radar-006",
+          "item_id": "radar-007",
           "category": "action_item",
-          "text": "Review the overseas terms of service",
-          "assignee": "Legal team",
-          "due_date": "July 23 at 12:00 PM",
+          "text": "Submit the revised quote including the translation server.",
+          "assignee": "TBD",
+          "due_date": "July 21 at 3:00 PM",
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-010"
+            "segment-004"
           ]
         },
         {
-          "item_id": "radar-007",
+          "item_id": "radar-008",
           "category": "action_item",
-          "text": "Compare the workload of subtitle-only English support with fully converting the screen and interface to English",
+          "text": "Have the legal team review the overseas terms of service.",
+          "assignee": "Legal team",
+          "due_date": "July 23 at noon",
+          "review_status": "suggested",
+          "lifecycle_status": "active",
+          "evidence_segment_ids": [
+            "segment-005"
+          ]
+        },
+        {
+          "item_id": "radar-009",
+          "category": "action_item",
+          "text": "Compare the workload of subtitles-only English localization versus translating the entire screen.",
           "assignee": "TBD",
           "due_date": "TBD",
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-011"
+            "segment-005"
           ]
         },
         {
-          "item_id": "radar-008",
+          "item_id": "radar-010",
           "category": "open_question",
           "text": "What is the exact monthly server cost?",
           "assignee": null,
@@ -493,64 +367,41 @@
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-009"
-          ]
-        }
-      ]
-    },
-    {
-      "at_ms": 88560,
-      "type": "final_transcript",
-      "segment_id": "segment-013",
-      "language": "ko",
-      "text": "다음 진척회의는 칠 월 이 십 사 일 오전 열 시입니다."
-    },
-    {
-      "at_ms": 91033,
-      "type": "context_normalization",
-      "segment_id": "segment-013",
-      "changed": false,
-      "normalized_text": "다음 진척회의는 칠 월 이 십 사 일 오전 열 시입니다.",
-      "matches": []
-    },
-    {
-      "at_ms": 91803,
-      "type": "translation",
-      "segment_id": "segment-013",
-      "text": "The next progress meeting is on July 24th at 10 AM.",
-      "provider": "Gemini",
-      "model": "Gemini 3.1 Flash Lite",
-      "latency_ms": 766
-    },
-    {
-      "at_ms": 111437,
-      "type": "radar_update",
-      "items": [
-        {
-          "item_id": "radar-009",
-          "category": "open_question",
-          "text": "What will be the product’s official English name?",
-          "assignee": null,
-          "due_date": null,
-          "review_status": "suggested",
-          "lifecycle_status": "active",
-          "evidence_segment_ids": [
-            "segment-012"
+            "segment-004"
           ]
         },
         {
-          "item_id": "radar-010",
+          "item_id": "radar-011",
           "category": "open_question",
-          "text": "Who will be assigned as weekend support staff?",
+          "text": "What is the official English product name?",
           "assignee": null,
           "due_date": null,
           "review_status": "suggested",
           "lifecycle_status": "active",
           "evidence_segment_ids": [
-            "segment-012"
+            "segment-005"
+          ]
+        },
+        {
+          "item_id": "radar-012",
+          "category": "open_question",
+          "text": "Who will own weekend support?",
+          "assignee": null,
+          "due_date": null,
+          "review_status": "suggested",
+          "lifecycle_status": "active",
+          "evidence_segment_ids": [
+            "segment-005"
           ]
         }
       ]
     }
-  ]
+  ],
+  "audio": {
+    "url": "/demo/verified-session-audio.mp3",
+    "duration_ms": 76610,
+    "sha256": "96870e48c9aedf776ac912eed27e37ded2a0d8e7f6b44e6f9a0c4d41740f089f",
+    "kind": "consented_scripted_demo",
+    "private_meeting_audio": false
+  }
 }

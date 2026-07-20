@@ -220,6 +220,12 @@ button { font: inherit; }
 .speed-toggle { display: inline-flex; padding: 3px; background: rgba(5,10,18,.42); border: 1px solid var(--line); border-radius: 9px; }
 .speed-toggle button { padding: 6px 8px; color: var(--muted); background: transparent; border: 0; border-radius: 6px; font-size: 9px; font-weight: 760; cursor: pointer; }
 .speed-toggle button.active { color: var(--accent); background: rgba(102,234,217,.1); }
+.demo-audio { display: none; }
+.audio-volume { display: inline-flex; min-height: 34px; padding: 0 8px; align-items: center; gap: 7px; color: var(--muted); background: rgba(5,10,18,.42); border: 1px solid var(--line); border-radius: 9px; }
+.audio-volume > span { max-width: 118px; overflow: hidden; font-size: 8px; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.audio-volume button { display: grid; width: 24px; height: 24px; place-items: center; color: var(--accent); background: rgba(102,234,217,.08); border: 0; border-radius: 6px; cursor: pointer; }
+.audio-volume input { width: 72px; accent-color: var(--accent); cursor: pointer; }
+.audio-error { margin: -2px 0 9px; padding: 8px 11px; color: var(--danger); background: rgba(255,137,148,.06); border: 1px solid rgba(255,137,148,.17); border-radius: 9px; font-size: 9px; }
 .demo-privacy { margin-bottom: 9px; padding: 8px 11px; color: #d5bd77; background: rgba(234,201,120,.045); border: 1px solid rgba(234,201,120,.12); border-radius: 10px; font-size: 9px; text-align: center; }
 .demo-grid { height: max(620px, calc(100vh - 332px)); min-height: 620px; }
 .demo-grid .viewer-panel { min-height: 0; }
@@ -266,6 +272,7 @@ button { font: inherit; }
   .pipeline-strip { grid-template-columns: 1fr; }
   .replay-controls { flex-wrap: wrap; }
   .replay-progress { order: 3; width: 100%; }
+  .audio-volume { flex: 1; justify-content: flex-end; }
 }
 
 @media (prefers-reduced-motion: reduce) {

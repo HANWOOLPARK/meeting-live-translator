@@ -8,6 +8,13 @@ export type ReplayFixture = {
     audio_retained: boolean;
     source_duration_ms: number;
   };
+  audio?: {
+    url: string;
+    duration_ms: number;
+    sha256: string;
+    kind: "consented_scripted_demo";
+    private_meeting_audio: false;
+  };
   events: Array<Record<string, unknown>>;
 };
 

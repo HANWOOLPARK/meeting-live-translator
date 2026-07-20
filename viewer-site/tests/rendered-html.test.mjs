@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 import {
@@ -65,7 +66,10 @@ test("removes the disposable starter and keeps relay boundaries explicit", async
 });
 
 test("public replay fixture is sanitized and schema-valid", async () => {
-  const raw = await readFile(new URL("../public/demo/verified-session.json", import.meta.url), "utf8");
+  const [raw, audio] = await Promise.all([
+    readFile(new URL("../public/demo/verified-session.json", import.meta.url), "utf8"),
+    readFile(new URL("../public/demo/verified-session-audio.mp3", import.meta.url)),
+  ]);
   const fixture = JSON.parse(raw);
   assert.equal(validateReplayFixture(fixture), true);
   assert.equal(fixture.schema_version, 1);
@@ -73,12 +77,15 @@ test("public replay fixture is sanitized and schema-valid", async () => {
   assert.equal(fixture.source.audio_retained, false);
   assert.equal(fixture.source.language, "ko");
   assert.equal(fixture.source.target_language, "en");
-  assert.equal(fixture.metrics.final_segments, 13);
-  assert.equal(fixture.metrics.translated_segments, 13);
+  assert.equal(fixture.metrics.final_segments, 5);
+  assert.equal(fixture.metrics.translated_segments, 5);
   assert.equal(fixture.metrics.evidence_valid, true);
-  assert.equal(fixture.metrics.translation_latency_ms.median, 843);
-  assert.equal(fixture.metrics.radar_items, 10);
+  assert.equal(fixture.metrics.translation_latency_ms.median, 1078);
+  assert.equal(fixture.metrics.radar_items, 12);
   assert.equal(fixture.pipeline.at(-1).model, "GPT-5.6 Luna");
+  assert.equal(fixture.audio.url, "/demo/verified-session-audio.mp3");
+  assert.equal(fixture.audio.duration_ms, 76610);
+  assert.equal(createHash("sha256").update(audio).digest("hex"), fixture.audio.sha256);
   assert.doesNotMatch(raw, /\b\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_[0-9a-f]{6,}\b|session_id|api_key|host_token|relay_secret/i);
   assert.doesNotMatch(raw, /[A-Z]:\\|\/Users\//);
 });
@@ -115,9 +122,13 @@ test("demo exposes replay, speed, restart, and evidence navigation controls", as
   ]);
   assert.match(page, /Verified API Replay/);
   assert.match(demo, /data-testid="verified-replay"/);
-  assert.match(demo, /setElapsedMs\(0\)/);
-  assert.match(demo, /setSpeed\(2\)/);
+  assert.match(demo, /startPlayback\(0\)/);
+  assert.match(demo, /changeSpeed\(2\)/);
   assert.match(demo, /type="range"/);
+  assert.match(demo, /audioRef/);
+  assert.match(demo, /audio\.play\(\)/);
+  assert.match(demo, /fixture\.audio\.url/);
+  assert.match(demo, /Audio volume/);
   assert.match(demo, /scrollIntoView/);
   assert.match(demo, /evidenceTargetId/);
 });

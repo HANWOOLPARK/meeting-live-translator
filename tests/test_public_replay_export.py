@@ -99,10 +99,42 @@ def test_public_replay_export_uses_recorded_language_pair_and_preserves_sources(
     assert fixture["metrics"]["translation_latency_ms"]["median"] == 700
     assert fixture["metrics"]["evidence_valid"] is True
     assert fixture["events"][0]["segment_id"] == "segment-001"
+    assert "audio" not in fixture
     serialized = json.dumps(fixture, ensure_ascii=False)
     assert session_id not in serialized
     assert "private-segment-1" not in serialized
     assert {path: _sha256(path) for path in paths} == before
+
+
+def test_public_replay_export_aligns_consented_demo_audio_without_local_path(
+    tmp_path: Path,
+) -> None:
+    session_id = _write_fixture(tmp_path)
+    audio_hash = "a" * 64
+
+    fixture = build_public_fixture(
+        tmp_path,
+        session_id,
+        timeline_offset_ms=1_000,
+        audio={
+            "url": "/demo/verified-session-audio.mp3",
+            "duration_ms": 8_000,
+            "sha256": audio_hash,
+        },
+    )
+
+    assert fixture["events"][0]["at_ms"] == 3_000
+    assert fixture["duration_ms"] == 8_000
+    assert fixture["audio"] == {
+        "url": "/demo/verified-session-audio.mp3",
+        "duration_ms": 8_000,
+        "sha256": audio_hash,
+        "kind": "consented_scripted_demo",
+        "private_meeting_audio": False,
+    }
+    serialized = json.dumps(fixture, ensure_ascii=False)
+    assert str(tmp_path) not in serialized
+    assert "동의받은 데모 대본 녹음" in fixture["disclosure"]["ko"]
 
 
 def test_public_replay_export_rejects_translation_target_mismatch(tmp_path: Path) -> None:
