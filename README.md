@@ -138,7 +138,7 @@ GPT-5.6 powers the final Decision Radar demo. The product does not present model
 
 ## Build Week scope disclosure
 
-Before the Build Week submission period, the project already had its core local captioning, session storage/export, and initial translation foundation. During Build Week, the project added or materially improved Deepgram streaming stability, multi-direction translation, the Context Engine, selective transcription risk handling, evidence-linked Decision Radar, review history, participant sharing, English UI, native overlay workflows, and the sanitized public Replay. The chronological record is in [`docs/BUILD_WEEK_LOG.md`](docs/BUILD_WEEK_LOG.md).
+Before the Build Week submission period, the project already had its core local captioning, session storage/export, and initial translation foundation. During Build Week, the project added or materially improved Deepgram streaming stability, multi-direction translation, the Context Engine, selective transcription risk handling, evidence-linked Decision Radar, review history, participant sharing, English UI, native overlay workflows, and the sanitized public Replay. The canonical English chronological record is in [`docs/BUILD_WEEK_LOG.md`](docs/BUILD_WEEK_LOG.md); the preserved Korean source log is in [`docs/BUILD_WEEK_LOG_KO.md`](docs/BUILD_WEEK_LOG_KO.md).
 
 ## Distribution and licenses
 

@@ -596,4 +596,4 @@ Phase 1 장치·전사 결과는 `docs/phase1_report.md`, Phase 2 구현·보안
 
 ## OpenAI Build Week 개발 기록
 
-Submission Period 전 프로젝트 기준선, 이후 Codex와 함께 해결한 문제·제품 결정·구현·실측 결과, 제출 체크리스트는 [`docs/BUILD_WEEK_LOG.md`](docs/BUILD_WEEK_LOG.md)에 누적합니다. 비밀키와 실제 회의 원문은 기록하지 않습니다.
+Submission Period 전 프로젝트 기준선, 이후 Codex와 함께 해결한 문제·제품 결정·구현·실측 결과, 제출 체크리스트의 한국어 원본은 [`docs/BUILD_WEEK_LOG_KO.md`](docs/BUILD_WEEK_LOG_KO.md)에 보존합니다. 심사용 영문 기준 문서는 [`docs/BUILD_WEEK_LOG.md`](docs/BUILD_WEEK_LOG.md)입니다. 비밀키와 실제 회의 원문은 기록하지 않습니다.
