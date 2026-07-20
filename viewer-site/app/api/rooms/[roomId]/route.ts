@@ -1,0 +1,54 @@
+import {
+  authorizeHost,
+  database,
+  ensureSchema,
+  expireIfNeeded,
+  getRoom,
+  jsonResponse,
+  parseState,
+  publicState,
+  validRoomId,
+} from "../../../../lib/relay";
+
+type RouteContext = { params: Promise<{ roomId: string }> };
+
+export async function GET(_request: Request, context: RouteContext) {
+  await ensureSchema();
+  const { roomId } = await context.params;
+  if (!validRoomId(roomId)) return jsonResponse({ code: "room_not_found" }, 404);
+  const found = await getRoom(roomId);
+  if (!found) return jsonResponse({ code: "room_not_found" }, 404);
+  const room = await expireIfNeeded(found);
+  if (room.status !== "active") {
+    return jsonResponse({ code: "room_ended", status: "ended" }, 410);
+  }
+  const now = Date.now();
+  return jsonResponse({
+    room_id: room.room_id,
+    status: room.status,
+    revision: room.revision,
+    expires_at: new Date(room.expires_at).toISOString(),
+    presenter_online: now - room.last_activity_at < 45_000,
+    retention_policy: room.retention_policy,
+    state: publicState(parseState(room.state_json)),
+  });
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  await ensureSchema();
+  const { roomId } = await context.params;
+  if (!validRoomId(roomId)) return jsonResponse({ code: "room_not_found" }, 404);
+  const room = await getRoom(roomId);
+  if (!room) return jsonResponse({ deleted: true });
+  if (!(await authorizeHost(request, room))) {
+    return jsonResponse({ code: "unauthorized" }, 401);
+  }
+  const now = Date.now();
+  await database()
+    .prepare(
+      "UPDATE share_rooms SET state_json = '{}', host_token_hash = '', status = 'ended', revision = revision + 1, updated_at = ?, last_activity_at = ?, ended_at = ?, expires_at = ? WHERE room_id = ?",
+    )
+    .bind(now, now, now, now + 5 * 60 * 1_000, roomId)
+    .run();
+  return jsonResponse({ deleted: true, room_id: roomId });
+}

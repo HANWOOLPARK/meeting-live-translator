@@ -1,0 +1,13 @@
+{
+  "name": "meeting-live-translator-desktop-overlay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Optional native transparent overlay host for Meeting Live Translator",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "43.1.1"
+  }
+}

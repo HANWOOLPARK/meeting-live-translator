@@ -1,0 +1,1 @@
+CREATE INDEX `share_rooms_expiry_idx` ON `share_rooms` (`status`,`expires_at`,`last_activity_at`);

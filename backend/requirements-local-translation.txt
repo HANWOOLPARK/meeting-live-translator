@@ -1,0 +1,7 @@
+# Isolated .venv-translation runtime only.
+# Never install this file into the main .venv. Torch is intentionally absent.
+ctranslate2==4.8.1
+transformers==4.57.6
+sentencepiece==0.2.1
+sacremoses==0.1.1
+psutil==7.0.0

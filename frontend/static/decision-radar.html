@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <meta name="theme-color" content="#080d17">
+    <meta name="description" content="Decision Radar 결과 전용 창" data-i18n-content="Decision Radar 결과 전용 창">
+    <link rel="icon" href="data:,">
+    <title data-i18n="실시간 Radar 결과">실시간 Radar 결과</title>
+    <link rel="stylesheet" href="/static/style.css?v=radar-history-20260718">
+    <link rel="stylesheet" href="/static/decision-radar-window.css?v=radar-window-20260715">
+    <script src="/static/i18n.js?v=radar-window-20260715" defer></script>
+    <script src="/static/decision-radar-window.js?v=radar-history-20260718" defer></script>
+  </head>
+  <body>
+    <main class="radar-window">
+      <header class="radar-window-toolbar">
+        <div class="radar-window-title">
+          <span class="status-dot" id="radarConnectionDot" data-state="connecting" aria-hidden="true"></span>
+          <div>
+            <strong>Decision Radar</strong>
+            <span id="radarConnectionStatus" role="status" data-i18n="연결 중">연결 중</span>
+          </div>
+        </div>
+
+        <div class="radar-window-controls" aria-label="Decision Radar 결과 창 설정" data-i18n-aria-label="Decision Radar 결과 창 설정">
+          <div class="radar-language-switcher" role="group" aria-label="UI 언어" data-i18n-aria-label="UI 언어">
+            <button type="button" data-ui-language="ko" aria-label="한국어 UI" data-i18n-aria-label="한국어 UI" aria-pressed="true">한국어</button>
+            <button type="button" data-ui-language="en" aria-label="영어 UI" data-i18n-aria-label="영어 UI" aria-pressed="false">English</button>
+          </div>
+
+          <label class="radar-opacity-control" for="radarBackgroundOpacityRange" title="결과 패널의 배경만 조절합니다. 글자는 불투명하게 유지됩니다." data-i18n-title="결과 패널의 배경만 조절합니다. 글자는 불투명하게 유지됩니다.">
+            <span data-i18n="결과 배경 투명도">결과 배경 투명도</span>
+            <input id="radarBackgroundOpacityRange" type="range" min="0" max="85" step="5" value="10">
+            <output id="radarBackgroundOpacityValue" for="radarBackgroundOpacityRange">10%</output>
+          </label>
+
+          <button class="radar-close-button" id="closeRadarWindowButton" type="button" aria-label="Decision Radar 결과 창 닫기" data-i18n-aria-label="Decision Radar 결과 창 닫기">×</button>
+        </div>
+      </header>
+
+      <section class="radar-window-surface" aria-label="Decision Radar 결과" data-i18n-aria-label="Decision Radar 결과">
+        <div class="radar-window-summary">
+          <span class="decision-radar-status-badge" id="radarStatusBadge" data-status="disabled" data-i18n="사용 안 함">사용 안 함</span>
+          <span id="radarProviderModel">provider — · model —</span>
+        </div>
+        <p class="radar-provider-guidance" data-i18n="Provider 설정은 메인 창에서 변경합니다.">Provider 설정은 메인 창에서 변경합니다.</p>
+        <div class="decision-radar-runtime">
+          <span id="radarSession" data-i18n="세션 대기 중">세션 대기 중</span>
+          <span id="radarQueue" data-i18n="대기열 0">대기열 0</span>
+        </div>
+        <p class="decision-radar-feedback" id="radarFeedback" role="status" hidden></p>
+        <p class="decision-radar-error" id="radarError" role="alert" hidden></p>
+
+        <div class="decision-radar-scroll" id="radarScroll">
+          <div class="decision-radar-empty" id="radarEmpty">
+            <h3 data-i18n="아직 포착한 항목이 없습니다">아직 포착한 항목이 없습니다</h3>
+            <p data-i18n="확정 자막 5개 또는 최대 10초 단위로 결정·할 일·질문을 근거와 함께 갱신합니다.">확정 자막 5개 또는 최대 10초 단위로 결정·할 일·질문을 근거와 함께 갱신합니다.</p>
+          </div>
+          <section class="decision-radar-group" id="radarDecisionsGroup" data-category="decision" hidden>
+            <h3><span data-i18n="결정 사항">결정 사항</span><span id="radarDecisionsCount">0</span></h3>
+            <div class="decision-radar-list" id="radarDecisions"></div>
+          </section>
+          <section class="decision-radar-group" id="radarActionsGroup" data-category="action_item" hidden>
+            <h3><span>Action Items</span><span id="radarActionsCount">0</span></h3>
+            <div class="decision-radar-list" id="radarActions"></div>
+          </section>
+          <section class="decision-radar-group" id="radarQuestionsGroup" data-category="open_question" hidden>
+            <h3><span data-i18n="미해결 질문">미해결 질문</span><span id="radarQuestionsCount">0</span></h3>
+            <div class="decision-radar-list" id="radarQuestions"></div>
+          </section>
+          <section class="decision-radar-group" id="radarConfirmationsGroup" data-category="needs_confirmation" hidden>
+            <h3><span data-i18n="확인 필요">확인 필요</span><span id="radarConfirmationsCount">0</span></h3>
+            <div class="decision-radar-list" id="radarConfirmations"></div>
+          </section>
+          <details class="decision-radar-history" id="radarHistoryDetails" hidden>
+            <summary>변경 기록 <span id="radarHistoryCount">0</span></summary>
+            <div class="decision-radar-list" id="radarHistory"></div>
+          </details>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

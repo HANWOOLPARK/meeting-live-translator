@@ -1,0 +1,248 @@
+:root {
+  --radar-surface-opacity: 0.9;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-width: 320px;
+  overflow: hidden;
+}
+
+body {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(35, 144, 132, 0.14), transparent 42%),
+    linear-gradient(160deg, #080d17 0%, #090f1b 100%);
+}
+
+.radar-window {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.radar-window-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  background: rgba(8, 14, 24, var(--radar-surface-opacity));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+}
+
+.radar-window-title,
+.radar-window-controls,
+.radar-language-switcher,
+.radar-opacity-control,
+.radar-window-summary {
+  display: flex;
+  align-items: center;
+}
+
+.radar-window-title {
+  min-width: 0;
+  gap: 9px;
+}
+
+.radar-window-title > div {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.radar-window-title strong {
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.radar-window-title span:not(.status-dot) {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  background: var(--warning);
+  border-radius: 50%;
+  box-shadow: 0 0 11px rgba(247, 201, 107, 0.4);
+}
+
+.status-dot[data-state="connected"] {
+  background: var(--success);
+  box-shadow: 0 0 11px rgba(103, 232, 165, 0.45);
+}
+
+.status-dot[data-state="error"] {
+  background: var(--danger);
+  box-shadow: 0 0 11px rgba(255, 126, 140, 0.4);
+}
+
+.radar-window-controls {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.radar-language-switcher {
+  padding: 2px;
+  background: rgba(11, 17, 28, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.radar-language-switcher button {
+  min-height: 25px;
+  padding: 3px 8px;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.radar-language-switcher button[data-active="true"] {
+  color: #071512;
+  background: var(--accent);
+}
+
+.radar-opacity-control {
+  gap: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.radar-opacity-control input {
+  width: 70px;
+}
+
+.radar-opacity-control output {
+  min-width: 27px;
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.radar-close-button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--text-soft);
+  background: rgba(148, 163, 184, 0.07);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.radar-close-button:hover {
+  color: #fff;
+  background: rgba(255, 126, 140, 0.12);
+  border-color: rgba(255, 126, 140, 0.25);
+}
+
+.radar-window-surface {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 12px;
+  background: rgba(9, 15, 26, var(--radar-surface-opacity));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.radar-window-summary {
+  min-width: 0;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.radar-window-summary > span:last-child {
+  min-width: 0;
+  color: var(--muted);
+  font: 9px/1.4 "Cascadia Code", Consolas, monospace;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.radar-provider-guidance {
+  margin: 7px 1px 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.radar-window-surface .decision-radar-runtime {
+  flex: 0 0 auto;
+}
+
+.radar-window-surface .decision-radar-scroll {
+  min-height: 0;
+  max-height: none;
+  flex: 1;
+}
+
+.radar-window-surface .decision-radar-empty {
+  min-height: 100%;
+}
+
+.radar-window-surface .decision-radar-item {
+  background: rgba(10, 17, 29, 0.62);
+}
+
+html[data-native-overlay="true"],
+html[data-native-overlay="true"] body {
+  background: transparent !important;
+}
+
+html[data-native-overlay="true"] .radar-window-toolbar {
+  -webkit-app-region: drag;
+}
+
+html[data-native-overlay="true"] button,
+html[data-native-overlay="true"] input,
+html[data-native-overlay="true"] textarea,
+html[data-native-overlay="true"] .decision-radar-scroll {
+  -webkit-app-region: no-drag;
+}
+
+@media (max-width: 680px) {
+  .radar-window-toolbar {
+    align-items: flex-start;
+  }
+
+  .radar-window-controls {
+    gap: 5px;
+  }
+
+  .radar-opacity-control > span {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .radar-window {
+    padding: 0;
+  }
+
+  .radar-window-toolbar,
+  .radar-window-surface {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+}

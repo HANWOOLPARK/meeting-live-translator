@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' ws://127.0.0.1:* ws://localhost:*; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+    <meta name="theme-color" content="#080d17">
+    <meta name="description" content="Meeting Live Translator 자막 전용 창" data-i18n-content="Meeting Live Translator 자막 전용 창">
+    <title data-i18n="실시간 자막 · Meeting Live Translator">실시간 자막 · Meeting Live Translator</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/captions.css?v=media-captions-20260716">
+    <script src="/static/i18n.js?v=media-captions-20260716" defer></script>
+    <script src="/static/captions.js?v=media-captions-20260716" defer></script>
+  </head>
+  <body data-view-mode="both" data-partial-active="false">
+    <main class="caption-window">
+      <header class="caption-toolbar">
+        <div class="window-title">
+          <span class="status-dot" id="statusDot" data-state="connecting" aria-hidden="true"></span>
+          <div>
+            <strong id="captionWindowTitle" data-i18n="실시간 자막">실시간 자막</strong>
+            <span id="connectionStatus" role="status" data-i18n="연결 중">연결 중</span>
+          </div>
+        </div>
+
+        <div class="toolbar-controls" aria-label="자막 창 설정" data-i18n-aria-label="자막 창 설정">
+          <label class="toolbar-field" for="captionViewModeSelect">
+            <span data-i18n="표시">표시</span>
+            <select id="captionViewModeSelect">
+              <option id="captionAutoViewOption" value="auto" data-i18n="자동 · 번역 우선">자동 · 번역 우선</option>
+              <option value="both" data-i18n="원문 + 번역">원문 + 번역</option>
+              <option value="original" data-i18n="원문만">원문만</option>
+              <option value="translation" data-i18n="번역만">번역만</option>
+            </select>
+          </label>
+
+          <label class="toolbar-field media-only-control" for="mediaWidthSelect">
+            <span data-i18n="창 너비">창 너비</span>
+            <select id="mediaWidthSelect">
+              <option value="60" data-i18n="화면의 60%">화면의 60%</option>
+              <option value="80" data-i18n="화면의 80%">화면의 80%</option>
+              <option value="94" data-i18n="화면의 94%">화면의 94%</option>
+            </select>
+          </label>
+
+          <label class="media-font-control media-only-control" for="mediaFontSizeRange">
+            <span data-i18n="글자 크기">글자 크기</span>
+            <input id="mediaFontSizeRange" type="range" min="22" max="48" step="1" value="36">
+            <output id="mediaFontSizeValue" for="mediaFontSizeRange">36px</output>
+          </label>
+
+          <div class="caption-language-switcher" role="group" aria-label="UI 언어" data-i18n-aria-label="UI 언어">
+            <button type="button" data-ui-language="ko" aria-label="한국어 UI" data-i18n-aria-label="한국어 UI" aria-pressed="true">한국어</button>
+            <button type="button" data-ui-language="en" aria-label="영어 UI" data-i18n-aria-label="영어 UI" aria-pressed="false">English</button>
+          </div>
+
+          <label class="opacity-control" for="backgroundOpacityRange" title="자막 패널의 배경만 조절합니다. 글자와 브라우저 제목 표시줄에는 적용되지 않습니다." data-i18n-title="자막 패널의 배경만 조절합니다. 글자와 브라우저 제목 표시줄에는 적용되지 않습니다.">
+            <span data-i18n="배경 투명도">배경 투명도</span>
+            <input id="backgroundOpacityRange" type="range" min="0" max="85" step="5" value="10">
+            <output id="backgroundOpacityValue" for="backgroundOpacityRange">10%</output>
+          </label>
+
+          <button class="icon-button" id="closeCaptionWindowButton" type="button" aria-label="자막 창 닫기" data-i18n-aria-label="자막 창 닫기">×</button>
+        </div>
+      </header>
+
+      <section class="caption-surface" aria-label="실시간 원문과 번역 자막" data-i18n-aria-label="실시간 원문과 번역 자막">
+        <div class="live-partial" id="partialPanel" data-active="false">
+          <div class="partial-label">
+            <span data-i18n="임시 원문"><i aria-hidden="true"></i> 임시 원문</span>
+            <span id="partialLanguage">—</span>
+          </div>
+          <p id="partialText" aria-live="polite" data-i18n="새로운 음성을 기다리고 있습니다.">새로운 음성을 기다리고 있습니다.</p>
+        </div>
+
+        <div class="caption-scroll" id="captionScroll">
+          <div class="empty-state" id="emptyState">
+            <span class="empty-mark" aria-hidden="true">⌁</span>
+            <strong data-i18n="표시할 확정 자막이 없습니다">표시할 확정 자막이 없습니다</strong>
+            <p data-i18n="메인 창에서 캡처를 시작하면 이곳에 실시간으로 표시됩니다.">메인 창에서 캡처를 시작하면 이곳에 실시간으로 표시됩니다.</p>
+          </div>
+          <ol class="caption-list" id="captionList" aria-label="실시간 자막 목록" data-i18n-aria-label="실시간 자막 목록" aria-live="polite"></ol>
+        </div>
+      </section>
+    </main>
+
+    <template id="captionItemTemplate">
+      <li class="caption-item">
+        <div class="caption-original">
+          <div class="caption-meta">
+            <time></time>
+            <span class="language-label"></span>
+          </div>
+          <p class="original-text"></p>
+        </div>
+        <div class="caption-translation" data-status="missing">
+          <span class="translation-label" data-i18n="번역">번역</span>
+          <p class="translation-text"></p>
+        </div>
+      </li>
+    </template>
+  </body>
+</html>

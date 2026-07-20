@@ -1,0 +1,7 @@
+# Temporary model-conversion environment only. setup_local_translation.bat
+# deletes this project-local environment after a successful conversion.
+ctranslate2==4.8.1
+transformers==4.57.6
+torch==2.13.0
+sentencepiece==0.2.1
+sacremoses==0.1.1
