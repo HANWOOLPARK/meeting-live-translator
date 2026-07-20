@@ -1226,3 +1226,53 @@ normalization → consistent translation → captured action → evidence naviga
   preserved Korean archive.
 - This documentation-only change does not read or modify session data, JSONL,
   provider configuration, runtime PIDs, or application behavior.
+
+## 37. Synchronized scripted audio for the public Replay — 2026-07-20 18:59 KST
+
+- **User problem and decision:** The keyless Replay was difficult to understand
+  without hearing the Korean source. The user explicitly approved a 76.61-second
+  recording of the fictional Build Week script for the public demo. Live meeting
+  audio remains outside the product's persisted session format.
+- **Actual pipeline validation:** Ran the same scripted recording through paid
+  Deepgram Nova-3 Korean STT, approved Context normalization, Gemini 3.1
+  Flash-Lite English translation, and GPT-5.6 Luna Radar. Context aliases were
+  refined only from repeatable STT forms; neither translations nor model output
+  were rewritten after generation. The selected run produced five finalized
+  segments, five translations, five visible context corrections, and 12 Radar
+  items: three decisions, six actions, and three open questions. All 12 evidence
+  references resolved to public finalized segments.
+- **Measured result:** Selected-run translation latency was 610ms minimum,
+  1,078ms median, 1,141ms nearest-rank p95, and 1,141ms maximum. The public event
+  timeline was shifted by the measured 1,903ms capture-to-playback offset. The
+  bundled 96kbps mono MP3 is 919,721 bytes and 76,610ms, SHA-256
+  `96870E48C9AEDF776AC912EED27E37DED2A0D8E7F6B44E6F9A0C4D41740F089F`.
+- **Replay implementation:** Added optional audio metadata and timing offset to
+  the sanitizer/exporter, with site-relative URL and SHA-256 validation. `/demo`
+  now starts only after a user gesture, keeps audio and events on one clock,
+  supports play/pause/restart/seek, 1×/2×, mute, and volume, then continues the
+  short post-audio Radar tail. Disclosure distinguishes the consented fictional
+  demo asset from private meeting audio and local session storage.
+- **Privacy and authenticity:** The selected local session kept `save_audio=false`.
+  The public fixture contains no original session/segment identifiers, API keys,
+  local paths, host token, or relay secret. Original Deepgram text and approved
+  normalization remain separately visible; residual recognition imperfections
+  were not hidden or converted into an ideal answer.
+- **Failures and trade-offs:** Early Windows playback setup attempts failed before
+  audio started and created no usable public data. A later Deepgram connection
+  attempt with a larger alias profile failed before playback with
+  `connection_failed`; the prior successful run was retained. The isolated pnpm
+  install blocked unapproved native build scripts and generated a temporary
+  policy placeholder, which was removed; installed local binaries completed the
+  checks. The first Replay test run also lacked Git's untracked empty preview
+  directory; recreating that empty directory produced 7/7 passes.
+- **Verification:** Replay exporter tests `3 passed`; full Python suite
+  `359 passed, 3 skipped in 17.87s`; Python compileall passed; viewer lint and
+  production build passed; Replay tests `7/7` passed. Fixture/audio SHA-256,
+  evidence integrity, private-pattern scanning, and `git diff --check` passed.
+  Work was isolated from the user's unrelated uncommitted main-worktree changes.
+- **Publication:** Feature commit `6eb6b4607970a3b7e70759037d6988758de1711f`
+  was pushed in PR #2. The exact viewer tree was fast-forwarded to the Sites
+  source as `d64ee43c24a93967d790ab1ffe4868f469411b60`, saved as Sites version 6,
+  and deployed successfully to the existing public URL. Anonymous checks returned
+  200 for `/` and `/demo`; the deployed MP3 was 919,721 bytes with the expected
+  SHA-256; a secret-free room creation request remained denied with 401.

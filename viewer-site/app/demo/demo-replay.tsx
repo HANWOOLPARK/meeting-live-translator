@@ -28,7 +28,7 @@ const copy = {
     realRun: "REAL API RUN · NO KEY REQUIRED",
     title: fixture.title.en,
     disclosure: fixture.disclosure.en,
-    privacy: "No audio, API keys, private paths, or original session identifiers are included.",
+    privacy: "Includes a consented scripted demo recording. No private meeting audio, API keys, local paths, or original session identifiers are included.",
     captions: "Original → context → translation",
     radar: "Evidence-linked Decision Radar",
     both: "Original + translation",
@@ -40,6 +40,11 @@ const copy = {
     pause: "Pause",
     restart: "Restart",
     speed: "Speed",
+    audio: "Scripted demo audio",
+    mute: "Mute",
+    unmute: "Unmute",
+    volume: "Audio volume",
+    audioError: "Audio could not be played in this browser.",
     core: "Key items",
     decisions: "Decisions",
     actions: "Actions",
@@ -61,7 +66,7 @@ const copy = {
     realRun: "실제 API 실행 · 키 불필요",
     title: fixture.title.ko,
     disclosure: fixture.disclosure.ko,
-    privacy: "오디오·API 키·내부 경로·원래 세션 식별자는 포함하지 않습니다.",
+    privacy: "동의받은 대본 녹음을 포함합니다. 비공개 회의 음성·API 키·내부 경로·원래 세션 식별자는 포함하지 않습니다.",
     captions: "원문 → 문맥 보정 → 번역",
     radar: "근거 연결형 Decision Radar",
     both: "원문 + 번역",
@@ -73,6 +78,11 @@ const copy = {
     pause: "일시정지",
     restart: "처음부터",
     speed: "속도",
+    audio: "데모 대본 음성",
+    mute: "음소거",
+    unmute: "소리 켜기",
+    volume: "오디오 음량",
+    audioError: "이 브라우저에서 오디오를 재생할 수 없습니다.",
     core: "핵심",
     decisions: "결정",
     actions: "Action",
@@ -105,12 +115,16 @@ function formatClock(milliseconds: number) {
 
 export function DemoReplay() {
   const [language, setLanguage] = useState<Language>("en");
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<1 | 2>(1);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(0.85);
+  const [audioError, setAudioError] = useState(false);
   const [radarTab, setRadarTab] = useState<RadarTab>("core");
   const [viewMode, setViewMode] = useState<ViewMode>("both");
   const lastTickRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const captionScrollRef = useRef<HTMLDivElement>(null);
   const radarScrollRef = useRef<HTMLDivElement>(null);
   const labels = copy[language];
@@ -139,6 +153,11 @@ export function DemoReplay() {
       const delta = (now - lastTickRef.current) * speed;
       lastTickRef.current = now;
       setElapsedMs((current) => {
+        const audio = audioRef.current;
+        if (fixture.audio && audio && current < fixture.audio.duration_ms && !audio.ended) {
+          if (audio.paused) return current;
+          return clampReplayTime(fixture, audio.currentTime * 1_000);
+        }
         const next = clampReplayTime(fixture, current + delta);
         if (next >= fixture.duration_ms) window.setTimeout(() => setPlaying(false), 0);
         return next;
@@ -148,6 +167,14 @@ export function DemoReplay() {
   }, [playing, speed]);
 
   useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.playbackRate = speed;
+    audio.volume = volume;
+    audio.muted = muted;
+  }, [muted, speed, volume]);
+
+  useEffect(() => {
     captionScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [state.segments.length]);
 
@@ -155,15 +182,61 @@ export function DemoReplay() {
     radarScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [state.radarItems.length, radarTab]);
 
+  const startPlayback = async (positionMs: number) => {
+    const position = clampReplayTime(fixture, positionMs);
+    setElapsedMs(position);
+    const audio = audioRef.current;
+    if (fixture.audio && audio && position < fixture.audio.duration_ms) {
+      audio.currentTime = position / 1_000;
+      audio.playbackRate = speed;
+      try {
+        await audio.play();
+        setAudioError(false);
+      } catch {
+        setAudioError(true);
+        setPlaying(false);
+        return;
+      }
+    }
+    lastTickRef.current = performance.now();
+    setPlaying(true);
+  };
+
   const togglePlayback = () => {
-    if (elapsedMs >= fixture.duration_ms) setElapsedMs(0);
-    setPlaying((current) => !current || elapsedMs >= fixture.duration_ms);
+    if (playing) {
+      audioRef.current?.pause();
+      setPlaying(false);
+      return;
+    }
+    void startPlayback(elapsedMs >= fixture.duration_ms ? 0 : elapsedMs);
   };
 
   const restart = () => {
-    setElapsedMs(0);
-    setPlaying(true);
     setRadarTab("core");
+    if (audioRef.current) audioRef.current.currentTime = 0;
+    void startPlayback(0);
+  };
+
+  const seekTo = (positionMs: number) => {
+    const position = clampReplayTime(fixture, positionMs);
+    setElapsedMs(position);
+    const audio = audioRef.current;
+    if (!fixture.audio || !audio) return;
+    if (position < fixture.audio.duration_ms) {
+      audio.currentTime = position / 1_000;
+      if (playing) void audio.play().catch(() => {
+        setAudioError(true);
+        setPlaying(false);
+      });
+    } else {
+      audio.pause();
+    }
+    lastTickRef.current = performance.now();
+  };
+
+  const changeSpeed = (nextSpeed: 1 | 2) => {
+    if (audioRef.current) audioRef.current.playbackRate = nextSpeed;
+    setSpeed(nextSpeed);
   };
 
   const jumpToEvidence = (segmentId: string) => {
@@ -219,6 +292,25 @@ export function DemoReplay() {
       </section>
 
       <section className="replay-controls" aria-label="Replay controls">
+        {fixture.audio && <audio
+          ref={audioRef}
+          className="demo-audio"
+          src={fixture.audio.url}
+          preload="metadata"
+          onTimeUpdate={(event) => {
+            if (!event.currentTarget.ended) {
+              setElapsedMs(clampReplayTime(fixture, event.currentTarget.currentTime * 1_000));
+            }
+          }}
+          onEnded={() => {
+            setElapsedMs(fixture.audio?.duration_ms ?? fixture.duration_ms);
+            lastTickRef.current = performance.now();
+          }}
+          onError={() => {
+            setAudioError(true);
+            setPlaying(false);
+          }}
+        />}
         <button className="replay-primary" onClick={togglePlayback}>{playing ? "Ⅱ" : "▶"}<span>{playing ? labels.pause : labels.play}</span></button>
         <button onClick={restart}>↺ <span>{labels.restart}</span></button>
         <div className="replay-progress">
@@ -229,15 +321,34 @@ export function DemoReplay() {
             max={fixture.duration_ms}
             step="100"
             value={Math.round(elapsedMs)}
-            onChange={(event) => setElapsedMs(Number(event.target.value))}
+            onChange={(event) => seekTo(Number(event.target.value))}
           />
           <time>{formatClock(elapsedMs)} / {formatClock(fixture.duration_ms)}</time>
         </div>
         <div className="speed-toggle" aria-label={labels.speed}>
-          <button className={speed === 1 ? "active" : ""} onClick={() => setSpeed(1)}>1×</button>
-          <button className={speed === 2 ? "active" : ""} onClick={() => setSpeed(2)}>2×</button>
+          <button className={speed === 1 ? "active" : ""} onClick={() => changeSpeed(1)}>1×</button>
+          <button className={speed === 2 ? "active" : ""} onClick={() => changeSpeed(2)}>2×</button>
         </div>
+        {fixture.audio && <div className="audio-volume">
+          <span>♪ {labels.audio}</span>
+          <button aria-label={muted ? labels.unmute : labels.mute} onClick={() => setMuted((current) => !current)}>{muted ? "×" : "◖"}</button>
+          <input
+            aria-label={labels.volume}
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={muted ? 0 : volume}
+            onChange={(event) => {
+              const nextVolume = Number(event.target.value);
+              setVolume(nextVolume);
+              setMuted(nextVolume === 0);
+            }}
+          />
+        </div>}
       </section>
+
+      {audioError && <p className="audio-error" role="alert">{labels.audioError}</p>}
 
       <aside className="demo-privacy">{labels.privacy}</aside>
 

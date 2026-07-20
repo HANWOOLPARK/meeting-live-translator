@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+from collections.abc import Mapping
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -37,6 +38,10 @@ def _elapsed_ms(value: str, origin: datetime) -> int:
     return max(0, round((_parse_timestamp(value) - origin).total_seconds() * 1_000))
 
 
+def _replay_elapsed_ms(value: str, origin: datetime, timeline_offset_ms: int) -> int:
+    return max(0, _elapsed_ms(value, origin) - timeline_offset_ms)
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -57,7 +62,33 @@ def _nearest_rank(values: list[int], percentile: float) -> int:
     return ordered[index]
 
 
-def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
+def build_public_fixture(
+    project_root: Path,
+    session_id: str,
+    *,
+    timeline_offset_ms: int = 0,
+    audio: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    if timeline_offset_ms < 0:
+        raise ValueError("The timeline offset must not be negative.")
+    public_audio: dict[str, Any] | None = None
+    if audio is not None:
+        public_audio = {
+            "url": str(audio.get("url") or "").strip(),
+            "duration_ms": int(audio.get("duration_ms") or 0),
+            "sha256": str(audio.get("sha256") or "").strip().lower(),
+            "kind": "consented_scripted_demo",
+            "private_meeting_audio": False,
+        }
+        if not public_audio["url"].startswith("/") or "://" in public_audio["url"]:
+            raise ValueError("The public audio URL must be a site-relative path.")
+        if public_audio["duration_ms"] <= 0:
+            raise ValueError("The public audio duration must be positive.")
+        if len(public_audio["sha256"]) != 64 or any(
+            character not in "0123456789abcdef"
+            for character in public_audio["sha256"]
+        ):
+            raise ValueError("The public audio SHA-256 is invalid.")
     session_dir = project_root / "data" / "sessions" / session_id
     session = _read_json(session_dir / "session.json")
     events = _read_jsonl(session_dir / "events.jsonl")
@@ -102,7 +133,9 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
     for segment in segments:
         private_id = str(segment["segment_id"])
         public_id = segment_ids[private_id]
-        final_at_ms = _elapsed_ms(str(segment["ended_at"]), origin)
+        final_at_ms = _replay_elapsed_ms(
+            str(segment["ended_at"]), origin, timeline_offset_ms
+        )
         source_end_ms = max(source_end_ms, final_at_ms)
         public_events.append(
             {
@@ -129,7 +162,9 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
             normalized_count += int(changed)
             public_events.append(
                 {
-                    "at_ms": _elapsed_ms(str(normalization["timestamp"]), origin),
+                    "at_ms": _replay_elapsed_ms(
+                        str(normalization["timestamp"]), origin, timeline_offset_ms
+                    ),
                     "type": "context_normalization",
                     "segment_id": public_id,
                     "changed": changed,
@@ -147,7 +182,9 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
             translation_latencies.append(latency_ms)
             public_events.append(
                 {
-                    "at_ms": _elapsed_ms(str(translation["timestamp"]), origin),
+                    "at_ms": _replay_elapsed_ms(
+                        str(translation["timestamp"]), origin, timeline_offset_ms
+                    ),
                     "type": "translation",
                     "segment_id": public_id,
                     "text": str(translation.get("translated_text") or ""),
@@ -164,7 +201,7 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
         if missing:
             raise ValueError(f"Radar evidence does not exist in the transcript: {missing}")
         created_at = str(item["created_at"])
-        at_ms = _elapsed_ms(created_at, origin)
+        at_ms = _replay_elapsed_ms(created_at, origin, timeline_offset_ms)
         radar_batches[at_ms].append(
             {
                 "item_id": f"radar-{index:03d}",
@@ -190,6 +227,8 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
     public_events.sort(key=lambda event: (int(event["at_ms"]), str(event["type"])))
     last_event_ms = max(int(event["at_ms"]) for event in public_events)
     duration_ms = last_event_ms + 1_200
+    if public_audio is not None:
+        duration_ms = max(duration_ms, int(public_audio["duration_ms"]))
     evidence_references = sum(
         len(item["evidence_segment_ids"])
         for items in radar_batches.values()
@@ -212,8 +251,18 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
             "source_duration_ms": source_end_ms,
         },
         "disclosure": {
-            "en": "Replay of a real API run using a fictional meeting. Audio was not retained under the product privacy policy.",
-            "ko": "개인정보가 없는 가상 회의를 실제 API로 실행한 Replay입니다. 제품 개인정보 보호 정책에 따라 오디오는 보관하지 않았습니다.",
+            "en": (
+                "Replay of a real API run using a fictional meeting. "
+                "A consented scripted demo recording is bundled separately from local session storage."
+                if public_audio is not None
+                else "Replay of a real API run using a fictional meeting. Audio was not retained under the product privacy policy."
+            ),
+            "ko": (
+                "개인정보가 없는 가상 회의를 실제 API로 실행한 Replay입니다. "
+                "동의받은 데모 대본 녹음은 로컬 세션 저장소와 분리해 제공합니다."
+                if public_audio is not None
+                else "개인정보가 없는 가상 회의를 실제 API로 실행한 Replay입니다. 제품 개인정보 보호 정책에 따라 오디오는 보관하지 않았습니다."
+            ),
         },
         "pipeline": PIPELINE,
         "metrics": {
@@ -233,6 +282,8 @@ def build_public_fixture(project_root: Path, session_id: str) -> dict[str, Any]:
         "duration_ms": duration_ms,
         "events": public_events,
     }
+    if public_audio is not None:
+        fixture["audio"] = public_audio
 
     serialized = json.dumps(fixture, ensure_ascii=False)
     forbidden = (session_id, str(session_dir), "api_key", "host_token", "relay_secret")
@@ -246,9 +297,32 @@ def main() -> int:
     parser.add_argument("session_id")
     parser.add_argument("output", type=Path)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--timeline-offset-ms", type=int, default=0)
+    parser.add_argument("--audio-url")
+    parser.add_argument("--audio-duration-ms", type=int)
+    parser.add_argument("--audio-sha256")
     args = parser.parse_args()
 
-    fixture = build_public_fixture(args.project_root.resolve(), args.session_id)
+    audio_values = (args.audio_url, args.audio_duration_ms, args.audio_sha256)
+    if any(value is not None for value in audio_values) and not all(
+        value is not None for value in audio_values
+    ):
+        parser.error("--audio-url, --audio-duration-ms, and --audio-sha256 are required together")
+    audio = (
+        {
+            "url": args.audio_url,
+            "duration_ms": args.audio_duration_ms,
+            "sha256": args.audio_sha256,
+        }
+        if args.audio_url is not None
+        else None
+    )
+    fixture = build_public_fixture(
+        args.project_root.resolve(),
+        args.session_id,
+        timeline_offset_ms=args.timeline_offset_ms,
+        audio=audio,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(fixture, ensure_ascii=False, indent=2) + "\n",

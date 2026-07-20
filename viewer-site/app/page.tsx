@@ -27,7 +27,8 @@ export default function Home() {
         </div>
         <div className="landing-privacy">
           The public Replay contains a fictional meeting recorded through the real API pipeline.
-          Audio, API keys, private paths, and original session identifiers are not included.
+          It includes a consented scripted demo recording, but no private meeting audio, API keys,
+          local paths, or original session identifiers.
         </div>
         <p className="landing-help">초대 링크로 실시간 공유 화면도 설치 없이 볼 수 있습니다. · Live rooms require a host invite link.</p>
       </section>

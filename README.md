@@ -34,7 +34,7 @@ Deepgram Nova-3 (Korean STT)
   → GPT-5.6 Luna (English Decision Radar)
 ```
 
-The Replay contains sanitized event timing and model output from the real run. It requires no API key, does not call a Provider, does not write to the sharing database, and contains no retained audio, private path, original session ID, or personal meeting data.
+The Replay contains sanitized event timing and model output from the real run, synchronized to a separately bundled, consented recording of the fictional demo script. It requires no API key, does not call a Provider, does not write to the sharing database, and contains no private meeting audio, private path, original session ID, or personal meeting data.
 
 ## Features
 
@@ -72,7 +72,7 @@ Queues are bounded, Provider calls are asynchronous, and every external failure 
 
 ## Privacy boundary
 
-- Audio is never written to disk by the application.
+- Live application audio is never written to session storage. The public Replay's scripted demo recording is a separate, explicitly consented static asset.
 - Partial captions are not persisted.
 - Final source transcripts and enabled derived results are stored locally under `data/sessions`.
 - Deepgram receives audio only when selected.
