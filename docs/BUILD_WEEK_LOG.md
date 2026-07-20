@@ -1270,3 +1270,9 @@ normalization → consistent translation → captured action → evidence naviga
   production build passed; Replay tests `7/7` passed. Fixture/audio SHA-256,
   evidence integrity, private-pattern scanning, and `git diff --check` passed.
   Work was isolated from the user's unrelated uncommitted main-worktree changes.
+- **Publication:** Feature commit `6eb6b4607970a3b7e70759037d6988758de1711f`
+  was pushed in PR #2. The exact viewer tree was fast-forwarded to the Sites
+  source as `d64ee43c24a93967d790ab1ffe4868f469411b60`, saved as Sites version 6,
+  and deployed successfully to the existing public URL. Anonymous checks returned
+  200 for `/` and `/demo`; the deployed MP3 was 919,721 bytes with the expected
+  SHA-256; a secret-free room creation request remained denied with 401.
