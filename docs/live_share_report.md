@@ -55,31 +55,31 @@ redirect URL을 허용해야 한다. 입장 전에 Google/Supabase 외부 인증
 
 ## 검증 결과
 
-- 로컬 앱 전체 회귀: `359 passed, 3 skipped`; Python compile 및 frontend JS syntax PASS
-- 공유·UI·다국어 대상 테스트: `24 passed`
-- 참석자 사이트: production build, ESLint 경고 0, OTP 암호·쿠키 및 route 계약을 포함한
-  Node 테스트 `12 passed`
-- 로컬 Vinext+D1 인증 E2E: 익명 방 조회 401, 인증 상태 false, 잘못된 challenge 400,
-  host 조회 200, host 감사 로그 200, 삭제 200, 종료된 방 410 PASS
-- 실제 메일 발송과 운영 Sites 배포는 실행하지 않았다. 검증된 발신 도메인과
-  sending-only key가 없는 상태에서 fail-closed 빌드를 배포하면 새 공유방 생성이 막히기 때문이다.
-- 기존 세션: 456개(이 중 JSONL 107개), 5,600,489 bytes, 작업 전후 집계 SHA-256
-  `9263139A75FE0108382864618ED3D9A489C7BD280120D636EBE188AA46456DE8`
+- 로컬 앱 전체 회귀: `369 passed, 3 skipped`
+- 참석자 사이트: production build, ESLint 경고 0, Node 테스트 `13 passed`
+- 로컬 fail-closed 검증: 인증 설정 조회 정상, 익명 방 조회 401, bearer token 없는
+  exchange 401, Supabase 또는 signing secret 누락 시 설정 조회·새 방 생성 503 PASS
+- Supabase migration 적용: `whykaigi_attendee_profiles`,
+  `whykaigi_room_access_logs` 생성, RLS 활성화, `anon` table grant 없음,
+  인증 사용자도 본인 row만 접근 가능
+- Supabase Security Advisor에서 WhyKaigi 보안 경고 0건. 비어 있는 신규 테이블의
+  unused-index INFO만 남아 있음
+- Sites production version 11, environment revision 8에서 Google 로그인→Viewer 복귀,
+  검증된 이메일 표시, 새로고침 후 세션 유지, D1의 `access_granted`,
+  `viewer_entered`, `signed_out` 감사 이벤트와 Supabase 중앙 입장 기록을 확인
+- 로그아웃 후 Google 로그인 화면 복귀, 공유 종료 후 시험방 조회 410 확인
+- 검증용 Supabase 인증 세션과 시험방은 검증 직후 폐기
+- 기존 JSONL 137개는 작업 전후 경로·길이·파일별 SHA-256이 동일하며, 기준 집계
+  SHA-256은 `22EC8102AD0CEA1BBADD229C59CE8FF6B11BEB3F7601ABEE3B8C00BE1F35545F`
 
-## 남은 단계
+## 운영 상태와 후속 경계
 
-현재 Sites 프로젝트의 접근 정책은 공개이지만, 운영 중인 기존 버전에는 이번 이메일 OTP
-변경을 아직 배포하지 않았다. 따라서 새 버전 배포 전까지 현재 링크를 외부에 공유하지 않는다.
-검증된 발신 도메인과 Resend sending-only key를 Sites runtime에 설정한 뒤 새 버전을
-배포하고, 서로 다른 외부 이메일 2개로 코드 수신→입장→새로고침→로그 표시→공유 종료 후
-410/세션 폐기를 확인하는 것이 마지막 운영 단계다.
+운영 Viewer는 Resend OTP 대신 Supabase Google 인증을 사용한다. Sites runtime에서
+Resend·OTP 환경변수는 제거했고 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+`MLT_ACCESS_SIGNING_SECRET`을 사용한다. Viewer 방 redirect wildcard도 기존 Why BJT와
+localhost 항목을 보존한 채 Supabase 허용 목록에 등록했다.
 
-2026-07-21 시험 발신자 설정으로 version 7 배포와 운영 API 검증을 진행했으나 Resend가
-설정된 키를 `401 API key is invalid`로 거부했다. 참석자 입장이 막힌 상태를 남기지 않기
-위해 OTP 환경 변수를 제거하고 직전 정상 version 6으로 롤백했다. 새 Resend 키를 발급해
-로컬 비밀 파일의 `RESEND_API_KEY`만 교체한 뒤 version 7을 다시 배포해야 한다.
-
-같은 날 유효한 새 키로 교체한 뒤 version 7을 운영에 재배포했다. 운영 시험방에서 생성
-201, 인증 전 상태 조회 401, 인증 설정 조회 200, 실제 OTP 메일 요청 202, host 감사 로그
-200과 `verification_code_sent`를 확인했다. 남은 검증은 수신한 코드 입력, 새로고침 후
-세션 유지, 참석자 이메일 표시, 방 종료 후 410과 세션 폐기다.
+현재는 기존 Why BJT Supabase 프로젝트를 재사용하지만 WhyKaigi 테이블은 별도 prefix와
+RLS로 격리했다. Auth 사용자 풀은 공유된다. 현재 개인 운영에는 충분하지만, WhyKaigi를
+독립 유료 서비스로 출시하기 전에는 장애·quota·운영 권한을 분리하기 위해 전용 Supabase
+프로젝트로 이전하는 것을 권장한다.
