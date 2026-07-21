@@ -7,6 +7,16 @@ WhyKaigi is a Windows-first meeting intelligence companion for people who need t
 > Build Week submission track: **Work & Productivity**  
 > Public, keyless Replay: [open the verified Korean → English demo](https://meeting-live-translator-viewer.bakbaul.chatgpt.site/demo).
 
+## Why I built it
+
+I live in Japan, and my Japanese is good enough for everyday life, but not yet strong enough for business meetings. I could recognize individual words and understand parts of the context, but I often could not tell the overall purpose of the meeting, how far the discussion had progressed, or what had actually been decided. I usually understood the full picture only after the meeting ended and I used AI to summarize it.
+
+I built WhyKaigi to understand the conversation while the meeting is still happening. It shows me what people are discussing and surfaces decisions in real time. Meetings used to feel long and frustrating. Now I look forward to them, because an application I built is genuinely helping me understand what is happening.
+
+WhyKaigi is part of my existing Why series. I first built [Why BJT](https://why-bjt-study.vercel.app/), a web application for studying business Japanese for the BJT exam. “WHY” stands for “What Holds You Back?” I chose that phrase after coming to Japan, when I struggled to adapt to the culture and often felt carried along by circumstances.
+
+In the future, I want to grow the Why series into one place where people from other countries living in Japan can find tools for Japanese study, meetings, and other parts of life in Japan.
+
 ## Why it is different
 
 Most meeting tools stop at captions, translation, or an AI summary. This project makes the entire decision path inspectable:

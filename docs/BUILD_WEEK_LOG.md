@@ -1551,3 +1551,25 @@ normalization → consistent translation → captured action → evidence naviga
   the user's final recording. Devpost's existing `/software/verbaradar` slug and
   the Sites technical hostname remain unchanged compatibility URLs; every visible
   product title and image uses WhyKaigi.
+
+## 46. Human-reviewed origin story - 2026-07-21 KST
+
+- **User-authored substance:** The user described in Korean that everyday
+  Japanese was sufficient for daily life but not for business meetings. They
+  could recognize words and pieces of context, yet could not understand the
+  meeting's overall purpose, current progress, or decisions until running an AI
+  summary after it ended. WhyKaigi began as a way to make that understanding
+  available during the meeting itself; meetings that had felt long and
+  frustrating became something the user now looks forward to because their own
+  application genuinely helps them follow the conversation.
+- **Name and longer vision:** The user connected WhyKaigi to their existing Why
+  BJT business-Japanese study app. `WHY` is their abbreviation for
+  `What Holds You Back?`, chosen after arriving in Japan and struggling to adapt
+  to the culture. Their longer-term goal is a Why series where people from other
+  countries living in Japan can find language-learning, meeting, and everyday
+  tools in one place.
+- **AI boundary and review:** Codex translated and structured only those supplied
+  facts into the English README and Devpost `Inspiration` section. The user read
+  the complete English draft, confirmed that it accurately represented their
+  experience, and explicitly approved publication before either surface was
+  updated. All other Devpost sections remained unchanged for later review.
