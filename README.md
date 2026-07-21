@@ -147,7 +147,9 @@ Live external tests are opt-in and guarded by explicit environment flags and con
 
 ## Built with Codex and GPT-5.6
 
-Codex was used as the implementation and verification partner throughout Build Week: translating product observations into testable contracts, tracing latency across STT/translation/UI stages, hardening Deepgram sentence assembly and reconnect behavior, building the Context Engine and evidence validator, reproducing Provider failures, checking process ownership and data invariants, and creating the public Replay path.
+I did not begin this project with a fixed technical implementation plan. I repeatedly used the application, found behavior that did not match my intention, explained the problem to Codex with concrete examples, and defined what an acceptable result should look like. Codex turned those observations into implementation changes, tests, diagnostics, and regression checks.
+
+For me, developing with Codex has become a hobby that fits naturally into everyday life. Codex handled the implementation problems, while I remained responsible for deciding what the product should do, testing whether it was genuinely useful in a real meeting, and rejecting results that did not meet the level I expected.
 
 GPT-5.6 powers the final Decision Radar demo. The product does not present model output as ground truth: items are suggestions, must cite existing finalized source segments, and remain reviewable and editable by the user.
 

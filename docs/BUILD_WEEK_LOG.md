@@ -1573,3 +1573,12 @@ normalization → consistent translation → captured action → evidence naviga
   the complete English draft, confirmed that it accurately represented their
   experience, and explicitly approved publication before either surface was
   updated. All other Devpost sections remained unchanged for later review.
+- **Second reviewed pass:** The user then described that Codex removed traditional
+  implementation blockers, while their own role was repeated real-use testing,
+  identifying mismatches, and setting concrete acceptance criteria. They also
+  identified paid-API uncertainty as the only material hesitation and
+  language-specific finalization timing, translation quality, speed, and
+  selective local Whisper verification as the product work they were most proud
+  of. Codex structured those facts into the README collaboration statement and
+  Devpost `Challenges` and `Accomplishments` sections; the user reviewed and
+  explicitly approved the complete drafts before publication.
