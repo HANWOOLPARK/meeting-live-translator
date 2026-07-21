@@ -3,12 +3,9 @@ import test from "node:test";
 import {
   VIEWER_SESSION_COOKIE,
   clearViewerSessionCookie,
-  constantTimeEqual,
   cookieValue,
-  generateVerificationCode,
+  hmacHex,
   normalizeEmail,
-  validVerificationCode,
-  verificationCodeHash,
   viewerSessionCookie,
 } from "../lib/access-auth-core.ts";
 
@@ -19,27 +16,27 @@ test("normalizes email addresses and rejects malformed input", () => {
   assert.equal(normalizeEmail("a".repeat(255)), null);
 });
 
-test("verification codes are six decimal digits", () => {
-  const generated = new Set();
-  for (let index = 0; index < 50; index += 1) {
-    const code = generateVerificationCode();
-    assert.match(code, /^\d{6}$/);
-    assert.equal(validVerificationCode(code), code);
-    generated.add(code);
-  }
-  assert.ok(generated.size > 1);
-  assert.equal(validVerificationCode("12345"), null);
-  assert.equal(validVerificationCode("12a456"), null);
+test("audit HMACs are deterministic and bound to both secret and value", async () => {
+  const first = await hmacHex("secret-a", "room-a\n192.0.2.1");
+  const again = await hmacHex("secret-a", "room-a\n192.0.2.1");
+  const otherSecret = await hmacHex("secret-b", "room-a\n192.0.2.1");
+  const otherValue = await hmacHex("secret-a", "room-b\n192.0.2.1");
+  assert.equal(first, again);
+  assert.notEqual(first, otherSecret);
+  assert.notEqual(first, otherValue);
+  assert.match(first, /^[0-9a-f]{64}$/);
 });
 
-test("code hashes are deterministic and bound to room, challenge, and email", async () => {
-  const first = await verificationCodeHash("secret", "room-a", "challenge-a", "a@example.com", "123456");
-  const again = await verificationCodeHash("secret", "room-a", "challenge-a", "a@example.com", "123456");
-  const otherRoom = await verificationCodeHash("secret", "room-b", "challenge-a", "a@example.com", "123456");
-  assert.equal(first, again);
-  assert.notEqual(first, otherRoom);
-  assert.equal(constantTimeEqual(first, again), true);
-  assert.equal(constantTimeEqual(first, otherRoom), false);
+test("cookie parser ignores unrelated and malformed values", () => {
+  assert.equal(
+    cookieValue(new Request("https://example.test", { headers: { Cookie: "other=value; wanted=safe%20value" } }), "wanted"),
+    "safe value",
+  );
+  assert.equal(
+    cookieValue(new Request("https://example.test", { headers: { Cookie: "wanted=%E0%A4%A" } }), "wanted"),
+    "",
+  );
+  assert.equal(cookieValue(new Request("https://example.test"), "wanted"), "");
 });
 
 test("viewer cookies are secure, HTTP-only, strict, and room-scoped", () => {

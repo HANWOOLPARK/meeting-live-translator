@@ -31,6 +31,7 @@ type Language = "ko" | "en";
 type ViewMode = "both" | "translation";
 type RadarTab = "core" | "decision" | "action" | "issues";
 type AccessStage = "checking" | "signin" | "authenticated";
+type AuthErrorCode = "" | "access" | "provider_unavailable" | "rate_limited";
 
 const copy = {
   ko: {
@@ -47,7 +48,7 @@ const copy = {
     both: "원문 + 번역",
     translation: "번역만",
     privacy: "오디오·API 키·Provider 설정·과거 세션은 공유되지 않습니다.",
-    retention: "공유 종료 시 중계 텍스트 즉시 삭제 · 비정상 종료 시 15분 유휴 만료 · 최대 8시간",
+    retention: "공유 종료 시 중계 텍스트·신원·세션 데이터 삭제 · 진행자 로컬 입장 기록 최대 30일",
     decisions: "결정 사항",
     actions: "할 일",
     questions: "미해결 질문",
@@ -67,14 +68,15 @@ const copy = {
     radarDelayed: "Radar 분석이 지연 중이지만 자막은 계속 표시됩니다.",
     expired: "진행자가 공유를 종료했거나 보관 기간이 만료되었습니다.",
     accessTitle: "Google 계정 확인 후 입장",
-    accessLead: "본인의 Google 계정으로 로그인하면 확인된 이메일과 입장 기록이 진행자에게 표시됩니다.",
+    accessLead: "이 방에 입장하려면 본인의 Google 계정을 확인하세요. 확인된 이메일과 이 방의 입장 기록만 진행자에게 표시됩니다.",
     signInGoogle: "Google로 계속하기",
+    continueRoom: "이 방에 입장하기",
     authenticating: "계정 확인 중…",
     rateLimited: "로그인 요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
     providerUnavailable: "Google 로그인이 아직 설정되지 않았습니다. 진행자에게 알려주세요.",
     accessError: "Google 계정을 확인하지 못했습니다. 잠시 후 다시 시도하세요.",
-    accessPrivacy: "Google과 Supabase는 계정 소유 여부를 확인하는 데 사용됩니다. 확인된 이메일과 링크 입장 기록은 보안 감사 목적으로 30일 보관 후 자동 삭제됩니다.",
-    contentPrivacy: "회의 중계 텍스트는 공유 종료 시 즉시 삭제됩니다.",
+    accessPrivacy: "Google과 Supabase는 계정 소유 여부를 확인하는 데 사용됩니다. 중계 서버의 확인 이메일과 입장 세션은 공유 종료 시 삭제되며, 진행자는 보안 감사용 입장 기록을 로컬에 최대 30일 보관할 수 있습니다.",
+    contentPrivacy: "회의 중계 텍스트와 중계 서버의 신원·세션 데이터는 공유 종료 시 삭제됩니다.",
     signOut: "나가기",
   },
   en: {
@@ -91,7 +93,7 @@ const copy = {
     both: "Original + translation",
     translation: "Translation only",
     privacy: "Audio, API keys, provider settings, and past sessions are not shared.",
-    retention: "Relay text is deleted when sharing ends · 15-minute idle expiry · 8-hour maximum",
+    retention: "Relay text, identity, and session data are deleted when sharing ends · Host-local access log up to 30 days",
     decisions: "Decisions",
     actions: "Action items",
     questions: "Open questions",
@@ -111,14 +113,15 @@ const copy = {
     radarDelayed: "Radar analysis is delayed. Captions continue.",
     expired: "The host ended sharing or the retention period expired.",
     accessTitle: "Continue with a verified Google account",
-    accessLead: "Sign in with your own Google account so the host can see the verified email that joined this room.",
+    accessLead: "Verify your Google account to enter this room. Only the verified email and this room's access event are shown to the host.",
     signInGoogle: "Continue with Google",
+    continueRoom: "Continue to this room",
     authenticating: "Checking account…",
     rateLimited: "Too many sign-in requests. Please wait and try again.",
     providerUnavailable: "Google sign-in is not configured yet. Contact the host.",
     accessError: "Your Google account could not be verified. Try again shortly.",
-    accessPrivacy: "Google and Supabase verify account ownership. Your verified email and invite access record are retained for security auditing and automatically deleted after 30 days.",
-    contentPrivacy: "Relayed meeting text is deleted when sharing ends.",
+    accessPrivacy: "Google and Supabase verify account ownership. The relay deletes verified identity and room-session data when sharing ends; the host may keep a local access audit for up to 30 days.",
+    contentPrivacy: "Relayed meeting text, identity, and session data are deleted when sharing ends.",
     signOut: "Sign out",
   },
 } as const;
@@ -144,6 +147,41 @@ function displayTime(value: string | null) {
     : new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(date);
 }
 
+type RoomAccessExchange = {
+  code?: string;
+  email?: string;
+  ok: boolean;
+  status: number;
+};
+
+async function exchangeRoomAccess(roomId: string, accessToken: string): Promise<RoomAccessExchange> {
+  const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/supabase`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  const result = await response.json().catch(() => ({})) as {
+    code?: string;
+    email?: string;
+  };
+  return { ...result, ok: response.ok, status: response.status };
+}
+
+function scrubOAuthCallbackParams() {
+  const url = new URL(window.location.href);
+  ["code", "error", "error_code", "error_description"].forEach((key) => url.searchParams.delete(key));
+  const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, "", cleanUrl);
+}
+
+function authErrorCodeFor(code: string): AuthErrorCode {
+  if (code === "authentication_rate_limited") return "rate_limited";
+  if (code === "supabase_auth_unavailable") return "provider_unavailable";
+  return "access";
+}
+
 export function ViewerRoom({ roomId }: { roomId: string }) {
   const [payload, setPayload] = useState<RoomPayload | null>(null);
   const [connection, setConnection] = useState<"connecting" | "live" | "reconnecting" | "ended" | "missing">("connecting");
@@ -155,8 +193,9 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
   const [accessStage, setAccessStage] = useState<AccessStage>("checking");
   const [authEmail, setAuthEmail] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [authError, setAuthError] = useState<AuthErrorCode>("");
   const [supabaseConfigured, setSupabaseConfigured] = useState(true);
+  const [hasSupabaseSession, setHasSupabaseSession] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const radarScrollRef = useRef<HTMLDivElement>(null);
   const radarPinnedRef = useRef(true);
@@ -181,16 +220,27 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     let cancelled = false;
     const checkAccess = async () => {
       try {
+        const callbackUrl = new URL(window.location.href);
+        const authCode = callbackUrl.searchParams.get("code");
+        const hasOAuthError = callbackUrl.searchParams.has("error")
+          || callbackUrl.searchParams.has("error_code")
+          || callbackUrl.searchParams.has("error_description");
+        const hasOAuthCallbackParams = Boolean(
+          authCode
+          || hasOAuthError,
+        );
         const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/status`, {
           cache: "no-store",
           headers: { Accept: "application/json" },
         });
         if (cancelled) return;
         if (response.status === 410) {
+          if (hasOAuthCallbackParams) scrubOAuthCallbackParams();
           setConnection("ended");
           return;
         }
         if (response.status === 404) {
+          if (hasOAuthCallbackParams) scrubOAuthCallbackParams();
           setConnection("missing");
           return;
         }
@@ -202,53 +252,63 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
         };
         setSupabaseConfigured(status.supabase_auth_configured !== false);
         if (status.authenticated) {
+          if (hasOAuthCallbackParams) scrubOAuthCallbackParams();
           setAuthEmail(status.email ?? "");
           setAccessStage("authenticated");
           return;
         }
         if (status.supabase_auth_configured === false) {
+          if (hasOAuthCallbackParams) scrubOAuthCallbackParams();
           setAccessStage("signin");
-          setAuthError(labels.providerUnavailable);
+          setAuthError("provider_unavailable");
+          return;
+        }
+
+        if (hasOAuthError) {
+          scrubOAuthCallbackParams();
+          setAccessStage("signin");
+          setAuthError("access");
           return;
         }
 
         const supabase = await getViewerSupabaseClient();
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        const accessToken = data.session?.access_token;
-        if (!accessToken) {
+        if (!authCode) {
+          const { data, error } = await supabase.auth.getSession();
+          if (error) throw error;
+          if (cancelled) return;
+          setHasSupabaseSession(Boolean(data.session?.access_token));
           setAccessStage("signin");
           return;
         }
-        const exchange = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/supabase`, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        const result = await exchange.json().catch(() => ({})) as {
-          code?: string;
-          email?: string;
-        };
+
+        const { data, error } = await supabase.auth.exchangeCodeForSession(authCode);
+        if (error) throw error;
+        if (cancelled) return;
+        scrubOAuthCallbackParams();
+        const accessToken = data.session?.access_token;
+        if (!accessToken) throw new Error("supabase_auth_failed");
+        setHasSupabaseSession(true);
+
+        const exchange = await exchangeRoomAccess(roomId, accessToken);
+        if (cancelled) return;
         if (exchange.status === 410) {
           setConnection("ended");
           return;
         }
-        if (!exchange.ok) throw new Error(result.code || "supabase_auth_failed");
-        setAuthEmail(result.email ?? data.session?.user.email ?? "");
+        if (!exchange.ok) throw new Error(exchange.code || "supabase_auth_failed");
+        setAuthEmail(exchange.email ?? data.session?.user.email ?? "");
         setAccessStage("authenticated");
         setConnection("connecting");
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setAccessStage("signin");
-          setAuthError(labels.accessError);
+          setAuthError(authErrorCodeFor(error instanceof Error ? error.message : ""));
         }
       }
     };
     void checkAccess();
     return () => { cancelled = true; };
-  }, [roomId, labels.accessError, labels.providerUnavailable]);
+  }, [roomId]);
 
   useEffect(() => {
     if (accessStage !== "authenticated") return;
@@ -300,11 +360,13 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     };
   }, [roomId, accessStage]);
 
-  const authFailureMessage = (code: string) => {
-    if (code === "authentication_rate_limited") return labels.rateLimited;
-    if (code === "supabase_auth_unavailable") return labels.providerUnavailable;
-    return labels.accessError;
-  };
+  const authErrorMessage = authError === "rate_limited"
+    ? labels.rateLimited
+    : authError === "provider_unavailable"
+      ? labels.providerUnavailable
+      : authError === "access"
+        ? labels.accessError
+        : "";
 
   const signInWithGoogle = async () => {
     if (authBusy) return;
@@ -312,6 +374,25 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     setAuthError("");
     try {
       const supabase = await getViewerSupabaseClient();
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const accessToken = data.session?.access_token;
+      if (accessToken) {
+        const exchange = await exchangeRoomAccess(roomId, accessToken);
+        if (exchange.status === 410) {
+          setConnection("ended");
+          setAuthBusy(false);
+          return;
+        }
+        if (!exchange.ok) throw new Error(exchange.code || "supabase_auth_failed");
+        setHasSupabaseSession(true);
+        setAuthEmail(exchange.email ?? data.session?.user.email ?? "");
+        setAccessStage("authenticated");
+        setConnection("connecting");
+        setAuthBusy(false);
+        return;
+      }
+
       const redirectTo = `${window.location.origin}/room/${encodeURIComponent(roomId)}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -320,7 +401,7 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
       if (error) throw error;
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
-      setAuthError(authFailureMessage(code));
+      setAuthError(authErrorCodeFor(code));
       setAuthBusy(false);
     }
   };
@@ -334,6 +415,7 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     await supabase?.auth.signOut({ scope: "local" }).catch(() => undefined);
     setPayload(null);
     setAuthEmail("");
+    setHasSupabaseSession(false);
     setAccessStage("signin");
     setConnection("connecting");
   };
@@ -486,12 +568,11 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
                 onClick={() => void signInWithGoogle()}
               >
                 <span aria-hidden="true">G</span>
-                {authBusy ? labels.authenticating : labels.signInGoogle}
+                {authBusy ? labels.authenticating : hasSupabaseSession ? labels.continueRoom : labels.signInGoogle}
               </button>
             </div>
           )}
-          {!supabaseConfigured && <p className="access-error" role="alert">{labels.providerUnavailable}</p>}
-          {authError && <p className="access-error" role="alert">{authError}</p>}
+          {authErrorMessage && <p className="access-error" role="alert">{authErrorMessage}</p>}
           <aside className="access-privacy"><strong>{labels.contentPrivacy}</strong><span>{labels.accessPrivacy}</span></aside>
         </section>
       </main>

@@ -45,9 +45,10 @@ test("published bundles contain no local Windows user path", async () => {
 });
 
 test("viewer room is read-only and keeps the privacy notice visible", async () => {
-  const [page, viewer] = await Promise.all([
+  const [page, viewer, supabaseBrowser] = await Promise.all([
     readFile(new URL("../app/room/[roomId]/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/room/[roomId]/viewer-room.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/supabase-browser.ts", import.meta.url), "utf8"),
   ]);
   assert.match(page, /ViewerRoom/);
   assert.match(viewer, /data-testid="viewer-room"/);
@@ -57,7 +58,14 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.match(viewer, /signInWithOAuth/);
   assert.match(viewer, /provider: "google"/);
   assert.match(viewer, /Google.*Supabase/s);
-  assert.match(viewer, /30일/);
+  assert.match(viewer, /continueRoom: "Continue to this room"/);
+  assert.match(viewer, /hasSupabaseSession \? labels\.continueRoom : labels\.signInGoogle/);
+  assert.match(
+    viewer,
+    /if \(!authCode\) \{[\s\S]*?getSession\(\)[\s\S]*?setAccessStage\("signin"\)[\s\S]*?return;[\s\S]*?exchangeCodeForSession\(authCode\)/,
+  );
+  assert.match(supabaseBrowser, /detectSessionInUrl: false/);
+  assert.match(supabaseBrowser, /flowType: "pkce"/);
   assert.match(viewer, /Shared meeting view/);
   assert.match(viewer, /API keys/);
   assert.match(viewer, /RadarTab/);
@@ -70,29 +78,70 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.doesNotMatch(viewer, /audio_url|api_key|provider_settings/);
 });
 
-test("room state API exchanges a verified Supabase Google identity for a room-scoped session", async () => {
-  const [roomRoute, supabaseRoute, supabaseAuth, migration, accessAuth] = await Promise.all([
+test("room access uses server-verified Google identity and a D1-only room audit", async () => {
+  const [
+    roomRoute,
+    supabaseRoute,
+    supabaseAuth,
+    migration,
+    accessAuth,
+    accessAuthCore,
+    relay,
+    legacyRequest,
+    legacyVerify,
+    proxy,
+  ] = await Promise.all([
     readFile(new URL("../app/api/rooms/[roomId]/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/rooms/[roomId]/auth/supabase/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/supabase-auth.ts", import.meta.url), "utf8"),
-    readFile(new URL("../supabase/whykaigi_attendee_auth.sql", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/remove_whykaigi_client_audit.sql", import.meta.url), "utf8"),
     readFile(new URL("../lib/access-auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/access-auth-core.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/relay.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[roomId]/auth/request/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[roomId]/auth/verify/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../proxy.ts", import.meta.url), "utf8"),
   ]);
   assert.match(roomRoute, /authorizeViewer/);
   assert.match(roomRoute, /google_identity_required/);
+  assert.match(roomRoute, /endRoomAndPurgeAccess/);
+  assert.ok(roomRoute.indexOf("hostAccessSnapshot") < roomRoute.indexOf("endRoomAndPurgeAccess(roomId, now)"));
   assert.match(supabaseRoute, /verifySupabaseGoogleIdentity/);
-  assert.match(supabaseRoute, /recordSupabaseRoomAccess/);
+  assert.match(supabaseRoute, /writeAccessLog/);
+  assert.match(supabaseRoute, /"access_granted"/);
+  assert.match(supabaseRoute, /"supabase_google"/);
+  assert.match(supabaseRoute, /const retainUntil = expiresAt/);
+  assert.match(supabaseRoute, /writeAccessLog[\s\S]*expiresAt/);
   assert.match(supabaseRoute, /Set-Cookie/);
   assert.match(supabaseAuth, /\/auth\/v1\/user/);
   assert.match(supabaseAuth, /email_confirmed_at/);
   assert.match(supabaseAuth, /identityUsesGoogle/);
   assert.match(supabaseAuth, /MLT_ACCESS_SIGNING_SECRET/);
-  assert.match(migration, /enable row level security/);
-  assert.match(migration, /auth\.uid\(\)/);
-  assert.match(migration, /revoke all.*from anon/is);
-  assert.match(migration, /interval '30 days'/);
+  assert.match(supabaseAuth, /PUBLISHABLE_KEY_PATTERN = \/\^sb_publishable_/);
+  assert.match(supabaseAuth, /PUBLISHABLE_KEY_PATTERN\.test\(publishableKey\)/);
+  assert.doesNotMatch(supabaseAuth, /sb_secret_|\/rest\/v1\/|PROFILE_TABLE|ACCESS_LOG_TABLE|recordSupabaseRoomAccess/);
+  assert.doesNotMatch(supabaseRoute, /central_audit_synced|recordSupabaseRoomAccess/);
+  assert.match(migration, /Supabase Auth remains the identity provider/);
+  assert.match(migration, /drop table if exists public\.whykaigi_room_access_logs/);
+  assert.match(migration, /drop table if exists public\.whykaigi_attendee_profiles/);
+  assert.doesNotMatch(migration, /create table|grant\s+insert|create policy|insert into/i);
   assert.match(accessAuth, /ACCESS_LOG_RETENTION_DAYS = 30/);
+  assert.match(accessAuth, /relayRetainUntil\?: number/);
+  assert.match(accessAuth, /"viewer_entered"[\s\S]*session\.expires_at/);
+  assert.doesNotMatch(accessAuth + accessAuthCore, /RESEND_API_KEY|generateVerificationCode|verificationCodeHash/);
+  assert.match(relay, /endRoomAndPurgeAccess/);
+  assert.match(relay, /DELETE FROM share_access_challenges WHERE room_id = \?/);
+  assert.match(relay, /DELETE FROM share_viewer_sessions WHERE room_id = \?/);
+  assert.match(relay, /DELETE FROM share_access_logs WHERE room_id = \?/);
+  assert.match(relay, /expireIfNeeded[\s\S]*endRoomAndPurgeAccess\(room\.room_id, now\)/);
   assert.doesNotMatch(roomRoute + supabaseRoute + supabaseAuth, /RESEND_API_KEY|one-time-code/i);
+  assert.match(legacyRequest, /email_otp_removed/);
+  assert.match(legacyVerify, /email_otp_removed/);
+  assert.match(legacyRequest, /410/);
+  assert.match(legacyVerify, /410/);
+  assert.doesNotMatch(legacyRequest + legacyVerify, /Set-Cookie|sendVerificationEmail|verificationCodeHash/);
+  assert.match(proxy, /frame-ancestors 'none'/);
+  assert.match(proxy, /X-Frame-Options", "DENY"/);
 });
 
 test("removes the disposable starter and keeps relay boundaries explicit", async () => {

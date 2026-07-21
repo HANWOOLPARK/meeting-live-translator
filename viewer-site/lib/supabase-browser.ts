@@ -24,7 +24,8 @@ export function getViewerSupabaseClient() {
       return createClient(config.url, config.publishable_key, {
         auth: {
           autoRefreshToken: true,
-          detectSessionInUrl: true,
+          detectSessionInUrl: false,
+          flowType: "pkce",
           persistSession: true,
           storageKey: "whykaigi-viewer-auth",
         },

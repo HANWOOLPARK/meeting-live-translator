@@ -422,18 +422,37 @@ export async function getRoom(roomId: string) {
     .first<RoomRow>();
 }
 
+export async function endRoomAndPurgeAccess(roomId: string, now = Date.now()) {
+  const tombstoneExpiresAt = now + ENDED_TOMBSTONE_MILLISECONDS;
+  const db = database();
+  await db.batch([
+    db.prepare(
+      "UPDATE share_rooms SET state_json = '{}', host_token_hash = '', status = 'ended', revision = revision + 1, updated_at = ?, last_activity_at = ?, ended_at = ?, expires_at = ? WHERE room_id = ? AND status = 'active'",
+    ).bind(now, now, now, tombstoneExpiresAt, roomId),
+    db.prepare("DELETE FROM share_access_challenges WHERE room_id = ?").bind(roomId),
+    db.prepare("DELETE FROM share_viewer_sessions WHERE room_id = ?").bind(roomId),
+    db.prepare("DELETE FROM share_access_logs WHERE room_id = ?").bind(roomId),
+  ]);
+  return tombstoneExpiresAt;
+}
+
 export async function expireIfNeeded(room: RoomRow) {
   if (room.status !== "active") return room;
   const now = Date.now();
   const idleDeadline = room.last_activity_at + room.idle_ttl_seconds * 1_000;
   if (now < room.expires_at && now < idleDeadline) return room;
-  await database()
-    .prepare(
-      "UPDATE share_rooms SET state_json = '{}', host_token_hash = '', status = 'ended', revision = revision + 1, updated_at = ?, ended_at = ?, expires_at = ? WHERE room_id = ?",
-    )
-    .bind(now, now, now + ENDED_TOMBSTONE_MILLISECONDS, room.room_id)
-    .run();
-  return { ...room, state_json: "{}", host_token_hash: "", status: "ended", ended_at: now };
+  const tombstoneExpiresAt = await endRoomAndPurgeAccess(room.room_id, now);
+  return {
+    ...room,
+    state_json: "{}",
+    host_token_hash: "",
+    status: "ended",
+    revision: room.revision + 1,
+    updated_at: now,
+    last_activity_at: now,
+    ended_at: now,
+    expires_at: tombstoneExpiresAt,
+  };
 }
 
 export async function authorizeHost(request: Request, room: RoomRow) {
@@ -443,10 +462,19 @@ export async function authorizeHost(request: Request, room: RoomRow) {
 
 export async function cleanupTombstones() {
   const now = Date.now();
-  await database()
-    .prepare("DELETE FROM share_rooms WHERE status != 'active' AND expires_at <= ?")
-    .bind(now)
-    .run();
+  const db = database();
+  await db.batch([
+    db.prepare("DELETE FROM share_rooms WHERE status != 'active' AND expires_at <= ?").bind(now),
+    db.prepare(
+      "DELETE FROM share_access_challenges WHERE NOT EXISTS (SELECT 1 FROM share_rooms WHERE share_rooms.room_id = share_access_challenges.room_id)",
+    ),
+    db.prepare(
+      "DELETE FROM share_viewer_sessions WHERE NOT EXISTS (SELECT 1 FROM share_rooms WHERE share_rooms.room_id = share_viewer_sessions.room_id)",
+    ),
+    db.prepare(
+      "DELETE FROM share_access_logs WHERE NOT EXISTS (SELECT 1 FROM share_rooms WHERE share_rooms.room_id = share_access_logs.room_id)",
+    ),
+  ]);
 }
 
 export function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}) {

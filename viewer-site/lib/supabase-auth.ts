@@ -2,8 +2,7 @@ import { env } from "cloudflare:workers";
 import { normalizeEmail } from "./access-auth-core";
 
 const SUPABASE_REQUEST_TIMEOUT_MS = 8_000;
-const PROFILE_TABLE = "whykaigi_attendee_profiles";
-const ACCESS_LOG_TABLE = "whykaigi_room_access_logs";
+const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{20,512}$/;
 
 type RuntimeEnv = typeof env & {
   MLT_ACCESS_SIGNING_SECRET?: string;
@@ -20,7 +19,6 @@ type SupabaseUserPayload = {
     providers?: unknown;
   } | null;
   user_metadata?: {
-    avatar_url?: unknown;
     full_name?: unknown;
     name?: unknown;
   } | null;
@@ -28,11 +26,8 @@ type SupabaseUserPayload = {
 };
 
 export type VerifiedSupabaseIdentity = {
-  accessToken: string;
-  userId: string;
   email: string;
   displayName: string;
-  avatarUrl: string;
   provider: "google";
 };
 
@@ -58,7 +53,7 @@ function validProjectUrl(value: string) {
 export function supabasePublicConfig() {
   const url = validProjectUrl((runtime().SUPABASE_URL ?? "").trim());
   const publishableKey = (runtime().SUPABASE_PUBLISHABLE_KEY ?? "").trim();
-  if (!url || !publishableKey || publishableKey.length > 2_048) return null;
+  if (!url || !PUBLISHABLE_KEY_PATTERN.test(publishableKey)) return null;
   return { url, publishableKey };
 }
 
@@ -114,72 +109,11 @@ export async function verifySupabaseGoogleIdentity(
   if (!email || !user.email_confirmed_at || !identityUsesGoogle(user)) return null;
 
   return {
-    accessToken,
-    userId,
     email,
     displayName: cleanText(
       user.user_metadata?.full_name ?? user.user_metadata?.name,
       120,
     ),
-    avatarUrl: cleanText(user.user_metadata?.avatar_url, 500),
     provider: "google",
   };
-}
-
-async function supabaseRestRequest(
-  identity: VerifiedSupabaseIdentity,
-  path: string,
-  body: unknown,
-  prefer: string,
-) {
-  const config = supabasePublicConfig();
-  if (!config) return false;
-  const response = await fetch(`${config.url}/rest/v1/${path}`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${identity.accessToken}`,
-      apikey: config.publishableKey,
-      "Content-Type": "application/json",
-      Prefer: prefer,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(SUPABASE_REQUEST_TIMEOUT_MS),
-  });
-  return response.ok;
-}
-
-export async function recordSupabaseRoomAccess(
-  roomId: string,
-  identity: VerifiedSupabaseIdentity,
-) {
-  const now = new Date().toISOString();
-  const profileSynced = await supabaseRestRequest(
-    identity,
-    `${PROFILE_TABLE}?on_conflict=user_id`,
-    {
-      user_id: identity.userId,
-      email: identity.email,
-      display_name: identity.displayName,
-      avatar_url: identity.avatarUrl,
-      provider: identity.provider,
-      last_seen_at: now,
-    },
-    "resolution=merge-duplicates,return=minimal",
-  ).catch(() => false);
-  const logSynced = await supabaseRestRequest(
-    identity,
-    ACCESS_LOG_TABLE,
-    {
-      room_id: roomId,
-      user_id: identity.userId,
-      email: identity.email,
-      display_name: identity.displayName,
-      provider: identity.provider,
-      event_type: "access_granted",
-      occurred_at: now,
-    },
-    "return=minimal",
-  ).catch(() => false);
-  return profileSynced && logSynced;
 }

@@ -1,7 +1,4 @@
-import {
-  ACCESS_LOG_RETENTION_DAYS,
-  writeAccessLog,
-} from "../../../../../../lib/access-auth";
+import { writeAccessLog } from "../../../../../../lib/access-auth";
 import { viewerSessionCookie } from "../../../../../../lib/access-auth-core";
 import {
   database,
@@ -14,7 +11,6 @@ import {
   validRoomId,
 } from "../../../../../../lib/relay";
 import {
-  recordSupabaseRoomAccess,
   supabaseAuthConfigured,
   verifySupabaseGoogleIdentity,
 } from "../../../../../../lib/supabase-auth";
@@ -52,7 +48,9 @@ export async function POST(request: Request, context: RouteContext) {
 
     const token = randomToken(32);
     const expiresAt = Math.min(room.expires_at, now + 8 * 60 * 60 * 1_000);
-    const retainUntil = now + ACCESS_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1_000;
+    // Relay identity rows live only through the room. The host's sanitized final
+    // audit snapshot has its own local, maximum-30-day retention policy.
+    const retainUntil = expiresAt;
     await database()
       .prepare(
         "INSERT INTO share_viewer_sessions (session_token_hash, room_id, email, created_at, expires_at, last_seen_at, view_started_at, view_count, revoked_at, retain_until) VALUES (?, ?, ?, ?, ?, ?, NULL, 0, NULL, ?)",
@@ -67,13 +65,13 @@ export async function POST(request: Request, context: RouteContext) {
         retainUntil,
       )
       .run();
-    const supabaseLogSynced = await recordSupabaseRoomAccess(roomId, identity);
     await writeAccessLog(
       roomId,
       identity.email,
       "access_granted",
       request,
-      supabaseLogSynced ? "supabase_google" : "supabase_google_local_audit",
+      "supabase_google",
+      expiresAt,
     );
     return jsonResponse(
       {
@@ -82,7 +80,6 @@ export async function POST(request: Request, context: RouteContext) {
         display_name: identity.displayName,
         provider: identity.provider,
         expires_at: new Date(expiresAt).toISOString(),
-        central_audit_synced: supabaseLogSynced,
       },
       200,
       { "Set-Cookie": viewerSessionCookie(roomId, token, (expiresAt - now) / 1_000) },
