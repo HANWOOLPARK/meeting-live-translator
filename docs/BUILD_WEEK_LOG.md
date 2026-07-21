@@ -1525,7 +1525,29 @@ normalization → consistent translation → captured action → evidence naviga
   no tracked secrets, sessions, models, virtual environments, runtime PID files,
   or legacy brand assets. SHA-256 is
   `CD2AE6361BFCF0A828ED12E65DABC7B63A0B30ECE014FE31D1854FDD316B86EC`.
-- **External release boundary:** The source and package are ready for the same
-  existing Sites project, Devpost entry, and GitHub repository to be renamed and
-  updated without replacing their data-bearing identifiers. Those external
-  results will be recorded after the live deployment and PR checks complete.
+- **GitHub release:** Renamed the existing public repository to
+  `HANWOOLPARK/whykaigi`, preserving its history and permissions. Updated its
+  description and demo homepage. The public `v1.0.0-build-week` release is now
+  titled `WhyKaigi - Build Week Demo` and contains only the verified
+  `whykaigi-lite-20260721.zip`; GitHub's digest and a fresh unauthenticated
+  download both matched the local SHA-256 above.
+- **Sites deployment:** Fast-forwarded the existing Sites source repository with
+  the exact verified Viewer tree and published version 10 using environment
+  revision 7. The site title and OTP sender display are `WhyKaigi`; the verified
+  sender address, Resend key, relay secret, OTP secret, D1 database, access logs,
+  rooms, and public URL were preserved. Public landing and `/demo` loaded the new
+  name and icon with no console warnings or local-path leakage.
+- **Public media check:** The deployed demo MP3 returned HTTP 200 as `audio/mpeg`,
+  exactly 919,721 bytes, and matched the verified local SHA-256
+  `96870E48C9AEDF776AC912EED27E37DED2A0D8E7F6B44E6F9A0C4D41740F089F`.
+  The Codex in-app browser exposed the media as fully buffered but refused audio
+  output under its own playback policy, so browser audio playback itself is not
+  claimed; the public bytes plus the 13 passing Replay/evidence tests provide the
+  deployment evidence.
+- **Devpost update:** Changed the published project display name and all six story
+  references to `WhyKaigi`, replaced its project links with the renamed GitHub
+  repository and public Replay, and uploaded the user-authored `Why?` thumbnail.
+  The demo video remains unset and the Build Week entry remains unsubmitted for
+  the user's final recording. Devpost's existing `/software/verbaradar` slug and
+  the Sites technical hostname remain unchanged compatibility URLs; every visible
+  product title and image uses WhyKaigi.
