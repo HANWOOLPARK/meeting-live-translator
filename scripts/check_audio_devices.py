@@ -82,7 +82,7 @@ def _name_for(catalog: DeviceCatalog, device_id: str | None) -> str:
 
 
 def _print_catalog(catalog: DeviceCatalog) -> None:
-    print("VerbaRadar - audio device check")
+    print("WhyKaigi - audio device check")
     print("Read-only inspection; no device or Windows setting is changed.")
     print(f"\nDefault output:     {_name_for(catalog, catalog.default_output_id)}")
     print(f"Default loopback:   {_name_for(catalog, catalog.default_loopback_id)}")

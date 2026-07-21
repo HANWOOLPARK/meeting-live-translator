@@ -52,7 +52,7 @@ def render_original_txt(session: Mapping[str, Any]) -> str:
     segments = list(session.get("segments", []))
     saved = [item for item in segments if item.get("original_saved") and item.get("original_text")]
     lines = [
-        "VerbaRadar - 전체 원문",
+        "WhyKaigi - 전체 원문",
         f"세션 ID: {session.get('session_id', '')}",
         f"전체 segment: {len(segments)} / 저장된 원문: {len(saved)}",
         "",
@@ -68,7 +68,7 @@ def render_translation_txt(session: Mapping[str, Any]) -> str:
     segments = list(session.get("segments", []))
     translated = [item for item in segments if item.get("translation_status") == "success" and item.get("korean_translation")]
     lines = [
-        "VerbaRadar - 전체 한국어 번역",
+        "WhyKaigi - 전체 한국어 번역",
         f"세션 ID: {session.get('session_id', '')}",
         (
             f"전체 segment: {len(segments)} / 번역 성공: {len(translated)} / "

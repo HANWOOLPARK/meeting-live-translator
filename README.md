@@ -1,8 +1,8 @@
-# VerbaRadar
+# WhyKaigi
 
 **Live translation with evidence-linked decisions.**
 
-VerbaRadar is a Windows-first meeting intelligence companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
+WhyKaigi is a Windows-first meeting intelligence companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
 
 > Build Week submission track: **Work & Productivity**  
 > Public, keyless Replay: [open the verified Korean → English demo](https://meeting-live-translator-viewer.bakbaul.chatgpt.site/demo).

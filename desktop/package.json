@@ -1,8 +1,8 @@
 {
-  "name": "verbaradar-desktop-overlay",
+  "name": "whykaigi-desktop-overlay",
   "version": "0.1.0",
   "private": true,
-  "description": "Optional native transparent overlay host for VerbaRadar",
+  "description": "Optional native transparent overlay host for WhyKaigi",
   "main": "main.cjs",
   "scripts": {
     "start": "electron ."

@@ -7,8 +7,8 @@
 
   const ENGLISH = Object.freeze({
     "Windows 시스템 음성 또는 마이크의 일본어·영어·한국어 원문과 선택적 번역을 표시하는 로컬 앱": "A local app that displays Japanese, English, or Korean system audio and microphone input with optional translation.",
-    "VerbaRadar 자막 전용 창": "VerbaRadar caption-only window",
-    "실시간 자막 · VerbaRadar": "Live Captions · VerbaRadar",
+    "WhyKaigi 자막 전용 창": "WhyKaigi caption-only window",
+    "실시간 자막 · WhyKaigi": "Live Captions · WhyKaigi",
     "자막으로 바로가기": "Skip to captions",
     "연결 상태": "Connection status",
     "앱": "App",
@@ -247,7 +247,7 @@
     "번역 결과": "Translation result",
     "번역을 사용하지 않습니다.": "Translation is disabled.",
     "실시간 자막": "Live captions",
-    "미디어 자막 · VerbaRadar": "Media Captions · VerbaRadar",
+    "미디어 자막 · WhyKaigi": "Media Captions · WhyKaigi",
     "자동 · 번역 우선": "Auto · Prefer translation",
     "창 너비": "Window width",
     "화면의 60%": "60% of screen",

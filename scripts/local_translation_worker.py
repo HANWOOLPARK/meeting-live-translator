@@ -189,7 +189,7 @@ class M2M100Runtime:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="VerbaRadar local worker")
+    parser = argparse.ArgumentParser(description="WhyKaigi local worker")
     parser.add_argument("--model", required=True, type=Path)
     parser.add_argument("--parent-pid", required=True, type=int)
     return parser

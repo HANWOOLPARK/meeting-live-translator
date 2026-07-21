@@ -27,7 +27,7 @@ body {
     radial-gradient(circle at 12% -8%, rgba(49, 165, 152, 0.18), transparent 34%),
     radial-gradient(circle at 90% 0%, rgba(75, 122, 196, 0.13), transparent 29%),
     linear-gradient(155deg, #070b12 0%, #090f19 46%, #070b12 100%);
-  font-family: var(--font-geist-sans), "Noto Sans KR", system-ui, sans-serif;
+  font-family: "Segoe UI", "Noto Sans KR", system-ui, sans-serif;
 }
 
 button { font: inherit; }
@@ -67,7 +67,7 @@ button { font: inherit; }
 .viewer-brand { display: flex; align-items: center; gap: 12px; color: var(--soft); font-size: 11px; font-weight: 780; letter-spacing: .14em; }
 
 .brand-signal { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; gap: 3px; background: rgba(102, 234, 217, .08); border: 1px solid rgba(102, 234, 217, .2); border-radius: 12px; }
-.brand-signal.verbaradar-mark { background-color: #061431; background-image: url('/verbaradar-icon.png'); background-position: center; background-repeat: no-repeat; background-size: cover; }
+.brand-signal.whykaigi-mark { background-color: #fff; background-image: url('/whykaigi-icon.png'); background-position: center; background-repeat: no-repeat; background-size: cover; }
 .brand-signal i { display: block; width: 2px; height: 8px; background: var(--accent); border-radius: 9px; }
 .brand-signal i:nth-child(2), .brand-signal i:nth-child(4) { height: 15px; }
 .brand-signal i:nth-child(3) { height: 22px; }
@@ -103,7 +103,7 @@ button { font: inherit; }
 .access-form label { color: #a9b7c7; font-size: 10px; font-weight: 760; }
 .access-form > input { width: 100%; min-height: 50px; padding: 0 14px; color: var(--ink); background: rgba(5,10,18,.58); border: 1px solid rgba(149,166,191,.18); border-radius: 12px; outline: none; font-size: 14px; }
 .access-form > input:focus { border-color: rgba(102,234,217,.52); box-shadow: 0 0 0 3px rgba(102,234,217,.08); }
-.access-form > input.access-code { text-align: center; font-family: var(--font-geist-mono), monospace; font-size: 24px; font-weight: 760; letter-spacing: .28em; }
+.access-form > input.access-code { text-align: center; font-family: "Cascadia Mono", "Consolas", monospace; font-size: 24px; font-weight: 760; letter-spacing: .28em; }
 .access-form > button { min-height: 48px; margin-top: 3px; color: #05110f; background: var(--accent); border: 0; border-radius: 12px; font-size: 12px; font-weight: 820; cursor: pointer; }
 .access-form > button:hover:not(:disabled) { background: #82f2e4; }
 .access-form > button:disabled { cursor: not-allowed; opacity: .45; }

@@ -684,7 +684,7 @@
     elements.autoViewOption.hidden = CAPTION_LAYOUT !== "media";
     elements.autoViewOption.disabled = CAPTION_LAYOUT !== "media";
     if (CAPTION_LAYOUT === "media") {
-      document.title = t("미디어 자막 · VerbaRadar");
+      document.title = t("미디어 자막 · WhyKaigi");
       elements.windowTitle.textContent = t("미디어 자막");
     }
     loadPreferences();

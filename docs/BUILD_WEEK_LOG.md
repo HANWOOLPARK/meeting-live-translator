@@ -1,6 +1,6 @@
 # OpenAI Build Week Development Log
 
-This is the canonical English submission record for Meeting Live Translator. The
+This is the canonical English submission record for WhyKaigi. The
 original Korean log is preserved verbatim in
 [`BUILD_WEEK_LOG_KO.md`](BUILD_WEEK_LOG_KO.md) (archive SHA-256:
 `95204397B48D7C36F56E79C43473038AFFDB4E763462DF42F4A295DF22BD6561`).
@@ -1489,3 +1489,43 @@ normalization → consistent translation → captured action → evidence naviga
   the three skips remain explicitly gated live-provider tests. Viewer production
   build and ESLint passed, all 12 Viewer tests passed, 33 focused renderer tests
   passed, and JavaScript syntax checks passed.
+
+## 45. User-authored WhyKaigi identity and release hardening - 2026-07-21 KST
+
+- **User decision and authorship boundary:** The user personally selected
+  `WhyKaigi` as the final product name and supplied the existing black `Why?`
+  wordmark already used across their own applications. Codex did not invent the
+  name or visual concept; it cleaned, upscaled, and adapted that supplied mark
+  into the required runtime and submission formats.
+- **Product-facing rebrand:** Updated the FastAPI title, Electron application and
+  window identity, main UI, detached caption and Radar windows, public Viewer,
+  OTP email copy, exports, package metadata, setup/start/stop messages, Lite
+  distribution name, documentation, and public replay attribution to
+  `WhyKaigi`. The same 512x512 PNG is used by all runtime surfaces, with a
+  multi-resolution Windows ICO plus 3:2 Open Graph and Devpost assets.
+- **Compatibility boundary:** Kept `MLT_*` environment variables, `mlt-*`
+  cookies/storage/broadcast keys, API and relay schemas, D1 bindings, session
+  formats, the local working-directory name, and the existing Sites project ID.
+  Historical specifications and previous VerbaRadar log entries remain intact.
+  No existing session, JSONL, model, credential, or access-log data was changed.
+- **Regression prevention:** Added checks for the exact WhyKaigi brand markers,
+  identical 512x512 runtime PNGs, removal of every legacy asset, absence of old
+  display names in runtime source, cache-safe renderer assets, and absence of
+  local Windows user paths from Viewer production bundles. Removing `next/font`
+  eliminated a build artifact that had embedded a developer-local absolute font
+  path in the previously published HTML.
+- **Actual verification:** Full Python regression passed `369 passed, 3 skipped`;
+  skips are the existing explicitly gated live-provider tests. Viewer ESLint,
+  Vinext production build, and all 13 Node tests passed. JavaScript syntax and
+  PowerShell parser checks passed. A real Electron restart reached healthy
+  FastAPI, translation Worker, app-ready, populated loopback device, and connected
+  WebSocket states while visibly rendering the new `Why?` mark and WhyKaigi
+  title.
+- **Lite release evidence:** Built `whykaigi-lite-20260721.zip` with 115 entries,
+  no tracked secrets, sessions, models, virtual environments, runtime PID files,
+  or legacy brand assets. SHA-256 is
+  `CD2AE6361BFCF0A828ED12E65DABC7B63A0B30ECE014FE31D1854FDD316B86EC`.
+- **External release boundary:** The source and package are ready for the same
+  existing Sites project, Devpost entry, and GitHub repository to be renamed and
+  updated without replacing their data-bearing identifiers. Those external
+  results will be recorded after the live deployment and PR checks complete.

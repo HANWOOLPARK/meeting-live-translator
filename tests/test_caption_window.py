@@ -39,7 +39,7 @@ def test_caption_window_route_serves_dedicated_page(tmp_path: Path) -> None:
     with TestClient(create_app(_services(tmp_path, STATIC))) as client:
         response = client.get("/captions")
         assert response.status_code == 200
-        assert "실시간 자막 · VerbaRadar" in response.text
+        assert "실시간 자막 · WhyKaigi" in response.text
         assert '/static/captions.js?v=' in response.text
         assert response.headers["cache-control"] == "no-store"
         static_response = client.get("/static/captions.js")
