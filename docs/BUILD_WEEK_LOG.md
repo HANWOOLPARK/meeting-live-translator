@@ -1625,19 +1625,18 @@ normalization → consistent translation → captured action → evidence naviga
   browser never writes a participant profile or access event through PostgREST. The
   cleanup SQL removes the retired `whykaigi_attendee_profiles` and
   `whykaigi_room_access_logs` tables without changing the shared project's generic
-  `private` schema. On explicit stop, idle expiry, or maximum-room expiry, the relay
-  returns the final host audit snapshot and purges room challenges, Viewer sessions,
-  access logs, identity data, and relayed text. The host app may retain that final
-  per-link audit copy locally for up to 30 days. Existing session JSONL remains
-  separate and unchanged.
-- **Deployment:** Product commit `91e2078` contains the integration. Sites source
-  commit `02e63d9d5d0726a3d36f790f677720bf5747f7d3` was published as Viewer
-  version 11 with environment revision 8. Resend and OTP variables were removed;
-  Supabase URL, publishable key, and a separate access-signing secret were added.
-  The Viewer room wildcard was added to the Supabase redirect allow list without
-  removing the existing Why BJT or localhost entries. Version 11 established the
-  production Google flow; the PKCE, explicit-consent, relay-purge, and Auth-only
-  changes above are the hardened source for the next Sites publication.
+  `private` schema. On explicit stop, the relay returns the final host audit snapshot
+  and then purges room challenges, Viewer sessions, access logs, identity data, and
+  relayed text. Idle or maximum-room expiry performs the same purge without returning
+  a host snapshot. The host app may retain the snapshot received on explicit stop
+  locally for up to 30 days. Existing session JSONL remains separate and unchanged.
+- **Deployment:** Product commit `fc3a8b2` was split to the exact Viewer source tree
+  and published as Sites source commit `52482b2091c7dc7fea50da7f29c1203786afb02d`,
+  Viewer version 12, environment revision 8. Resend and OTP variables remain removed;
+  only the Supabase URL, modern publishable key, and a separate access-signing secret
+  are configured. The Viewer room wildcard remains in the Supabase redirect allow
+  list alongside the existing Why BJT and localhost entries. Version 12 contains the
+  PKCE, explicit-consent, relay-purge, Auth-only, and anti-frame hardening above.
 - **Initial production verification:** A disposable production room completed Google
   sign-in, redirected back to WhyKaigi, displayed the verified identity, survived
   refresh, and produced `access_granted`, `viewer_entered`, and `signed_out` audit
@@ -1646,6 +1645,12 @@ normalization → consistent translation → captured action → evidence naviga
   anonymous access returned 410. The disposable auth session and room were removed.
   The central Supabase audit used by that initial run was then retired in favor of
   server-owned D1 auditing and stop/end purging.
+- **Version 12 production verification:** The public auth configuration returned only
+  a modern `sb_publishable_` key and no secret field. Retired OTP endpoints returned
+  410 without cookies. `/room/**` returned `frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`, and private/no-store caching. A disposable relay room
+  rejected anonymous reads and tokenless Supabase exchange with 401, returned a
+  clean final audit on host deletion, and returned 410 afterward.
 - **Regression evidence:** Full Python regression passed `369 passed, 3 skipped`.
   Viewer lint and production build passed, and all 13 Viewer tests passed. Local
   fail-closed HTTP checks returned 401 for anonymous room/exchange access and 503
@@ -1660,7 +1665,8 @@ normalization → consistent translation → captured action → evidence naviga
   Only the Auth user pool and project-level operational limits are shared; WhyKaigi
   no longer keeps custom profile or access-log tables there. A dedicated Supabase
   project is still recommended before an independent commercial launch.
-- **Build Week record:** Devpost version 11 replaces the obsolete email-OTP claims
-  with the verified Google/Supabase flow and updates the regression total to 369.
+- **Build Week record:** The latest Devpost technical update replaces obsolete
+  email-OTP claims with the verified Google/Supabase flow and updates the regression
+  total to 369.
   The user's reviewed origin story, product judgments, demo video, title, tagline,
   and project links were preserved unchanged; the submitted project remains live.
