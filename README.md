@@ -1,8 +1,8 @@
-# Meeting Live Translator
+# VerbaRadar
 
 **Live translation with evidence-linked decisions.**
 
-Meeting Live Translator is a Windows-first meeting companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
+VerbaRadar is a Windows-first meeting intelligence companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
 
 > Build Week submission track: **Work & Productivity**  
 > Public, keyless Replay: [open the verified Korean → English demo](https://meeting-live-translator-viewer.bakbaul.chatgpt.site/demo).
@@ -47,7 +47,7 @@ The Replay contains sanitized event timing and model output from the real run, s
 - Evidence-linked decisions, action items, open questions, and confirmation needs.
 - Separate caption, one-line media caption, and Radar windows; optional Electron always-on-top transparent overlays.
 - Local append-only sessions, JSONL records, recovery, and exports.
-- Read-only participant sharing and a public verified Replay.
+- Email-verified, read-only participant sharing and a public verified Replay.
 - Korean/English UI.
 
 ## Architecture and failure boundaries
@@ -80,6 +80,11 @@ Queues are bounded, Provider calls are asynchronous, and every external failure 
 - API keys remain in the local `.env` or hosted secret configuration and are never returned by diagnostics.
 - `.env`, `.share.env`, sessions, logs, PID files, models, runtimes, and virtual environments are excluded from source and Lite releases.
 - Participant sharing requires explicit consent and displays external-transfer and retention notices.
+- Invite links require a six-digit email OTP before room data is fetched. Codes expire after ten minutes,
+  attempts and resends are bounded, session cookies are room-scoped and HTTP-only, and raw codes/IPs are
+  never stored.
+- Relayed meeting text is deleted when sharing ends. Link-specific verified-email/access audit records are
+  retained separately for 30 days; local audit files never modify session JSONL.
 
 ## Install on Windows 11
 

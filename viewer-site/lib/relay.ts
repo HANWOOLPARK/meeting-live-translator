@@ -109,6 +109,77 @@ export async function ensureSchema() {
       CREATE INDEX IF NOT EXISTS share_rooms_expiry_idx
       ON share_rooms(status, expires_at, last_activity_at)
     `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS share_access_challenges (
+        challenge_id TEXT PRIMARY KEY NOT NULL,
+        room_id TEXT NOT NULL,
+        email TEXT NOT NULL,
+        email_hash TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        ip_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        consumed_at INTEGER,
+        retain_until INTEGER NOT NULL
+      )
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_access_challenges_room_email_idx
+      ON share_access_challenges(room_id, email_hash, created_at)
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_access_challenges_ip_idx
+      ON share_access_challenges(ip_hash, created_at)
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_access_challenges_retention_idx
+      ON share_access_challenges(retain_until)
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS share_viewer_sessions (
+        session_token_hash TEXT PRIMARY KEY NOT NULL,
+        room_id TEXT NOT NULL,
+        email TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        last_seen_at INTEGER NOT NULL,
+        view_started_at INTEGER,
+        view_count INTEGER NOT NULL DEFAULT 0,
+        revoked_at INTEGER,
+        retain_until INTEGER NOT NULL
+      )
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_viewer_sessions_room_email_idx
+      ON share_viewer_sessions(room_id, email, created_at)
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_viewer_sessions_retention_idx
+      ON share_viewer_sessions(retain_until)
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS share_access_logs (
+        event_id TEXT PRIMARY KEY NOT NULL,
+        room_id TEXT NOT NULL,
+        email TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        occurred_at INTEGER NOT NULL,
+        ip_hash TEXT NOT NULL,
+        detail_code TEXT NOT NULL DEFAULT '',
+        retain_until INTEGER NOT NULL
+      )
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_access_logs_room_time_idx
+      ON share_access_logs(room_id, occurred_at)
+    `),
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS share_access_logs_retention_idx
+      ON share_access_logs(retain_until)
+    `),
   ]);
 }
 

@@ -1,8 +1,8 @@
 {
-  "name": "meeting-live-translator-desktop-overlay",
+  "name": "verbaradar-desktop-overlay",
   "version": "0.1.0",
   "private": true,
-  "description": "Optional native transparent overlay host for Meeting Live Translator",
+  "description": "Optional native transparent overlay host for VerbaRadar",
   "main": "main.cjs",
   "scripts": {
     "start": "electron ."

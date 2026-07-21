@@ -71,6 +71,7 @@ def create_app(
         request_timeout_seconds=(
             resolved_services.settings.share_relay_timeout_seconds
         ),
+        audit_dir=resolved_services.settings.project_root / "data" / "share-access",
     )
     share_event_sink = sharing.publish_event
     resolved_services.websocket_manager.add_event_sink(share_event_sink)
@@ -309,7 +310,7 @@ def create_app(
             await resolved_services.websocket_manager.close_all()
 
     app = FastAPI(
-        title="Meeting Live Translator",
+        title="VerbaRadar",
         version=APP_VERSION,
         description=(
             "Phase 3 near-real-time transcription, optional Korean translation, "
@@ -325,6 +326,10 @@ def create_app(
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
+        if request.url.path in {"/", "/captions", "/decision-radar"} or request.url.path.startswith(
+            "/static/"
+        ):
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     @app.exception_handler(SafeAppError)
@@ -498,6 +503,10 @@ def create_app(
             make_event("live_share_status", live_share=payload)
         )
         return payload
+
+    @app.get("/api/share/access-log")
+    async def live_share_access_log() -> dict[str, Any]:
+        return await sharing.access_logs()
 
     @app.get("/api/audio/devices")
     async def audio_devices() -> dict[str, Any]:

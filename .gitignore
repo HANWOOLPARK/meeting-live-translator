@@ -27,6 +27,8 @@ data/sessions/*
 !data/sessions/.gitkeep
 data/context_engine.json
 data/decision_radar.json
+data/share-access/*
+!data/share-access/.gitkeep
 *.log
 
 # Editors and operating systems

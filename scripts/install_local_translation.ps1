@@ -78,7 +78,7 @@ function Test-ModelFiles {
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $root "backend\requirements.txt") -PathType Leaf)) {
-    throw "The selected directory is not a Meeting Live Translator project root."
+    throw "The selected directory is not a VerbaRadar project root."
 }
 if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
     throw "Python executable was not found: $python"

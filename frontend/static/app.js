@@ -168,6 +168,11 @@
       consentConfirmed: false,
       lastLatencyMs: null,
       lastErrorCode: "",
+      accessHistory: [],
+      selectedAccessRoomId: "",
+      accessLogLoading: false,
+      accessLogPollTimer: null,
+      verifiedAttendeeCount: 0,
     },
   };
 
@@ -206,9 +211,17 @@
     liveShareLinkPanel: document.querySelector("#liveShareLinkPanel"),
     liveShareUrl: document.querySelector("#liveShareUrl"),
     copyLiveShareLinkButton: document.querySelector("#copyLiveShareLinkButton"),
-    openLiveShareLinkButton: document.querySelector("#openLiveShareLinkButton"),
     liveShareFeedback: document.querySelector("#liveShareFeedback"),
     liveShareError: document.querySelector("#liveShareError"),
+    liveShareDetails: document.querySelector("#liveShareDetails"),
+    liveShareAuditPanel: document.querySelector("#liveShareAuditPanel"),
+    refreshLiveShareAuditButton: document.querySelector("#refreshLiveShareAuditButton"),
+    liveShareAuditRoomSelect: document.querySelector("#liveShareAuditRoomSelect"),
+    liveShareVerifiedCount: document.querySelector("#liveShareVerifiedCount"),
+    liveShareRejectedCount: document.querySelector("#liveShareRejectedCount"),
+    liveShareAttendeeList: document.querySelector("#liveShareAttendeeList"),
+    liveShareAuditEmpty: document.querySelector("#liveShareAuditEmpty"),
+    liveShareAuditError: document.querySelector("#liveShareAuditError"),
     contextStatusBadge: document.querySelector("#contextStatusBadge"),
     contextProfileSelect: document.querySelector("#contextProfileSelect"),
     activateContextProfileButton: document.querySelector("#activateContextProfileButton"),
@@ -680,7 +693,6 @@
       || !sharing.consentConfirmed;
     elements.stopLiveShareButton.disabled = busy || !sharing.active;
     elements.copyLiveShareLinkButton.disabled = !sharing.active || !sharing.viewerUrl;
-    elements.openLiveShareLinkButton.disabled = !sharing.active || !sharing.viewerUrl;
     elements.startLiveShareButton.setAttribute("aria-busy", String(busy && !sharing.active));
     elements.stopLiveShareButton.setAttribute("aria-busy", String(busy && sharing.active));
   }
@@ -704,7 +716,111 @@
     state.liveShare.expiresAt = String(source.expires_at || "");
     state.liveShare.lastLatencyMs = source.last_latency_ms ?? null;
     state.liveShare.lastErrorCode = String(source.last_error_code || "");
+    state.liveShare.verifiedAttendeeCount = Number(source.verified_attendee_count || 0);
     renderLiveShare();
+  }
+
+  function shareAccessTime(value) {
+    const date = new Date(String(value || ""));
+    if (Number.isNaN(date.getTime())) return "—";
+    return new Intl.DateTimeFormat(UI_LOCALE, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  function selectedShareAccessLog() {
+    const history = state.liveShare.accessHistory;
+    return history.find((item) => item.room_id === state.liveShare.selectedAccessRoomId)
+      || history[0]
+      || null;
+  }
+
+  function renderLiveShareAccessLogs() {
+    const history = state.liveShare.accessHistory;
+    const selected = selectedShareAccessLog();
+    elements.liveShareAuditPanel.hidden = history.length === 0 && !state.liveShare.active;
+    elements.refreshLiveShareAuditButton.disabled = state.liveShare.accessLogLoading;
+    elements.liveShareAuditRoomSelect.disabled = history.length < 2;
+    const previousRoom = elements.liveShareAuditRoomSelect.value;
+    elements.liveShareAuditRoomSelect.replaceChildren();
+    history.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.room_id;
+      const suffix = String(item.room_id || "").slice(-6);
+      option.textContent = `${shareAccessTime(item.created_at)} · …${suffix}`;
+      elements.liveShareAuditRoomSelect.append(option);
+    });
+    const desiredRoom = selected?.room_id || previousRoom;
+    if (desiredRoom) elements.liveShareAuditRoomSelect.value = desiredRoom;
+
+    const attendees = Array.isArray(selected?.attendees) ? selected.attendees : [];
+    const events = Array.isArray(selected?.events) ? selected.events : [];
+    elements.liveShareVerifiedCount.textContent = String(attendees.length);
+    elements.liveShareRejectedCount.textContent = String(
+      events.filter((item) => item.event_type === "verification_code_rejected").length,
+    );
+    elements.liveShareAttendeeList.replaceChildren();
+    attendees.forEach((attendee) => {
+      const item = document.createElement("li");
+      const identity = document.createElement("div");
+      const email = document.createElement("strong");
+      const status = document.createElement("span");
+      email.textContent = String(attendee.email || "");
+      status.textContent = attendee.active ? t("접속 중") : t("접속 종료");
+      status.dataset.active = String(attendee.active === true);
+      identity.append(email, status);
+      const meta = document.createElement("p");
+      meta.textContent = `${t("최초 인증")} ${shareAccessTime(attendee.first_verified_at)} · ${t("마지막 확인")} ${shareAccessTime(attendee.last_seen_at)}`;
+      item.append(identity, meta);
+      elements.liveShareAttendeeList.append(item);
+    });
+    elements.liveShareAuditEmpty.hidden = attendees.length > 0;
+  }
+
+  async function loadLiveShareAccessLogs({ quiet = false } = {}) {
+    if (state.liveShare.accessLogLoading) return;
+    state.liveShare.accessLogLoading = true;
+    if (!quiet) {
+      elements.liveShareAuditError.hidden = true;
+      elements.liveShareAuditError.textContent = "";
+    }
+    renderLiveShareAccessLogs();
+    try {
+      const payload = await apiRequest("/api/share/access-log", { timeout: 7_000 });
+      const candidates = [payload.current, ...(Array.isArray(payload.history) ? payload.history : [])]
+        .filter((item) => item && item.room_id);
+      const unique = [];
+      const seen = new Set();
+      candidates.forEach((item) => {
+        if (seen.has(item.room_id)) return;
+        seen.add(item.room_id);
+        unique.push(item);
+      });
+      state.liveShare.accessHistory = unique;
+      if (!unique.some((item) => item.room_id === state.liveShare.selectedAccessRoomId)) {
+        state.liveShare.selectedAccessRoomId = unique[0]?.room_id || "";
+      }
+      if (payload.refresh_error && !quiet) throw new Error("access_log_refresh_failed");
+    } catch (_error) {
+      if (!quiet) {
+        elements.liveShareAuditError.textContent = t("접속 기록을 확인하지 못했습니다.");
+        elements.liveShareAuditError.hidden = false;
+      }
+    } finally {
+      state.liveShare.accessLogLoading = false;
+      renderLiveShareAccessLogs();
+    }
+  }
+
+  function startLiveShareAccessLogPolling() {
+    if (state.liveShare.accessLogPollTimer) return;
+    state.liveShare.accessLogPollTimer = window.setInterval(() => {
+      if (!state.liveShare.active || document.visibilityState !== "visible") return;
+      void loadLiveShareAccessLogs({ quiet: true });
+    }, 10_000);
   }
 
   function renderLiveShare() {
@@ -726,6 +842,7 @@
     } else if (sharing.status === "degraded") {
       setLiveShareError(t("공유 서버 연결이 지연되고 있습니다. 로컬 자막과 번역은 계속됩니다."));
     }
+    renderLiveShareAccessLogs();
     updateLiveShareControls();
   }
 
@@ -752,6 +869,7 @@
         timeout: 10_000,
       });
       applyLiveSharePayload(payload);
+      await loadLiveShareAccessLogs({ quiet: true });
       setLiveShareFeedback(t("초대 링크 공유를 시작했습니다."));
     } catch (error) {
       setLiveShareError(extractMessage(error, t("초대 링크 공유를 시작하지 못했습니다.")));
@@ -770,6 +888,7 @@
     try {
       const payload = await apiRequest("/api/share/stop", { method: "POST", timeout: 10_000 });
       applyLiveSharePayload(payload);
+      await loadLiveShareAccessLogs({ quiet: true });
       state.liveShare.consentConfirmed = false;
       elements.liveShareConsent.checked = false;
       setLiveShareFeedback(t("공유를 종료하고 중계 텍스트를 삭제했습니다."));
@@ -785,11 +904,6 @@
     if (!state.liveShare.viewerUrl) return;
     const copied = await writeClipboard(state.liveShare.viewerUrl);
     setLiveShareFeedback(copied ? t("초대 링크를 복사했습니다.") : t("초대 링크를 복사하지 못했습니다."));
-  }
-
-  function openLiveShareLink() {
-    if (!state.liveShare.viewerUrl) return;
-    window.open(state.liveShare.viewerUrl, "_blank", "noopener,noreferrer");
   }
 
   function updateTranslationControls() {
@@ -4887,7 +5001,7 @@
     }
     captionWindow = window.open(
       "/captions",
-      "meeting-live-translator-captions",
+      "verbaradar-captions",
       "popup=yes,width=920,height=620,resizable=yes,scrollbars=no",
     );
     if (!captionWindow) {
@@ -4917,7 +5031,7 @@
     const top = (Number(window.screen.availTop) || 0) + availableHeight - height - 12;
     mediaCaptionWindow = window.open(
       "/captions?layout=media",
-      "meeting-live-translator-media-captions",
+      "verbaradar-media-captions",
       `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`,
     );
     if (!mediaCaptionWindow) {
@@ -4941,7 +5055,7 @@
     }
     decisionRadarWindow = window.open(
       "/decision-radar",
-      "meeting-live-translator-decision-radar",
+      "verbaradar-decision-radar",
       "popup=yes,width=560,height=760,resizable=yes,scrollbars=no",
     );
     if (!decisionRadarWindow) {
@@ -5050,7 +5164,14 @@
     elements.startLiveShareButton.addEventListener("click", startLiveShare);
     elements.stopLiveShareButton.addEventListener("click", stopLiveShare);
     elements.copyLiveShareLinkButton.addEventListener("click", copyLiveShareLink);
-    elements.openLiveShareLinkButton.addEventListener("click", openLiveShareLink);
+    elements.refreshLiveShareAuditButton.addEventListener("click", () => loadLiveShareAccessLogs());
+    elements.liveShareAuditRoomSelect.addEventListener("change", () => {
+      state.liveShare.selectedAccessRoomId = elements.liveShareAuditRoomSelect.value;
+      renderLiveShareAccessLogs();
+    });
+    elements.liveShareDetails.addEventListener("toggle", () => {
+      if (elements.liveShareDetails.open) void loadLiveShareAccessLogs({ quiet: true });
+    });
     elements.contextProfileSelect.addEventListener("change", updateContextControls);
     elements.activateContextProfileButton.addEventListener("click", activateContextProfile);
     elements.createContextProfileButton.addEventListener("click", createContextProfile);
@@ -5246,6 +5367,7 @@
       state.intentionalClose = true;
       if (state.reconnectTimer) window.clearTimeout(state.reconnectTimer);
       if (state.translation.workerPollTimer) window.clearInterval(state.translation.workerPollTimer);
+      if (state.liveShare.accessLogPollTimer) window.clearInterval(state.liveShare.accessLogPollTimer);
       stopAnalysisPolling();
       state.ws?.close(1000, "page closing");
       captionChannel?.close();
@@ -5275,8 +5397,10 @@
       loadAnalysisConfiguration(),
       loadDecisionRadarConfiguration(),
       loadLiveShareStatus(),
+      loadLiveShareAccessLogs({ quiet: true }),
     ]);
     startTranslationWorkerPolling();
+    startLiveShareAccessLogPolling();
     updateControls();
   }
 

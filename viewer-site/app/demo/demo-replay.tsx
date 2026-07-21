@@ -260,8 +260,8 @@ export function DemoReplay() {
     <main className="demo-shell" data-testid="verified-replay">
       <header className="demo-header">
         <div className="viewer-brand">
-          <span className="brand-signal" aria-hidden="true"><i /><i /><i /><i /><i /></span>
-          <div><p>MEETING LIVE TRANSLATOR</p><h1>{labels.replay}</h1></div>
+          <span className="brand-signal verbaradar-mark" aria-hidden="true" />
+          <div><p>VERBARADAR</p><h1>{labels.replay}</h1></div>
         </div>
         <div className="demo-header-actions">
           <Link className="demo-back" href="/">← {labels.back}</Link>

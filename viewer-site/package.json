@@ -1,5 +1,5 @@
 {
-  "name": "site-creator-vinext-starter",
+  "name": "verbaradar-viewer",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -9,7 +9,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "pnpm run build && node --test tests/rendered-html.test.mjs",
+    "test": "pnpm run build && node --experimental-strip-types --test tests/access-auth-core.test.mjs tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

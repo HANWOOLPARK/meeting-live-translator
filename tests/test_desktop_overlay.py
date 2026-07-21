@@ -29,9 +29,28 @@ LITE_BUILD = (ROOT / "scripts" / "build_lite_release.ps1").read_text(encoding="u
 def test_electron_is_project_local_and_exactly_pinned() -> None:
     assert PACKAGE["private"] is True
     assert PACKAGE["main"] == "main.cjs"
+    assert PACKAGE["name"] == "verbaradar-desktop-overlay"
     assert PACKAGE["devDependencies"]["electron"] == "43.1.1"
     assert LOCK["packages"][""]["devDependencies"]["electron"] == "43.1.1"
     assert LOCK["packages"]["node_modules/electron"]["version"] == "43.1.1"
+
+
+def test_verbaradar_brand_and_native_icon_are_applied() -> None:
+    assert 'app.setName("VerbaRadar")' in MAIN
+    assert 'app.setAppUserModelId("com.verbaradar.desktop")' in MAIN
+    assert 'const iconPath = path.join(__dirname, "assets", "verbaradar.ico")' in MAIN
+    assert MAIN.count("icon: iconPath") == 2
+    assert (DESKTOP / "assets" / "verbaradar.ico").stat().st_size > 0
+    assert (DESKTOP / "assets" / "verbaradar-icon.png").stat().st_size > 0
+
+
+def test_desktop_clears_stale_renderer_bundles_before_opening_main_window() -> None:
+    ready = MAIN.index("app.whenReady().then(async () =>")
+    clear_cache = MAIN.index("session.defaultSession.clearCache()", ready)
+    clear_code_cache = MAIN.index("session.defaultSession.clearCodeCaches({})", ready)
+    create_window = MAIN.index("createMainWindow();", ready)
+    assert clear_cache < create_window
+    assert clear_code_cache < create_window
 
 
 def test_native_overlays_are_transparent_frameless_and_always_on_top() -> None:
@@ -102,6 +121,8 @@ def test_start_and_stop_scripts_target_only_project_owned_desktop_process() -> N
     assert "Get-OwnedDesktopProcess" in START_DESKTOP
     assert "Get-CimInstance Win32_Process" in START_DESKTOP
     assert "desktop\\main.cjs" in STOP_PROJECT
+    assert '"desktop\\assets\\verbaradar.ico"' in LITE_BUILD
+    assert '"desktop\\assets\\verbaradar-icon.png"' in LITE_BUILD
     assert "Get-OwnedProcess" in STOP_PROJECT
     assert "taskkill.exe /PID $desktopProcessId /T /F" in STOP_PROJECT
     lowered = STOP_PROJECT.lower()

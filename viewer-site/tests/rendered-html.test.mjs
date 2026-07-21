@@ -21,7 +21,7 @@ test("build output and public verified replay landing are present", async () => 
   assert.match(page, /href="\/demo"/);
   assert.match(page, /Decision Radar/);
   assert.match(page, /data-testid="viewer-home"/);
-  assert.match(layout, /Meeting Live Translator/);
+  assert.match(layout, /VerbaRadar/);
   assert.doesNotMatch(page + layout, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
@@ -32,6 +32,12 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   ]);
   assert.match(page, /ViewerRoom/);
   assert.match(viewer, /data-testid="viewer-room"/);
+  assert.match(viewer, /data-testid="viewer-access-gate"/);
+  assert.match(viewer, /\/auth\/status/);
+  assert.match(viewer, /\/auth\/request/);
+  assert.match(viewer, /\/auth\/verify/);
+  assert.match(viewer, /one-time-code/);
+  assert.match(viewer, /30일/);
   assert.match(viewer, /Shared meeting view/);
   assert.match(viewer, /API keys/);
   assert.match(viewer, /RadarTab/);
@@ -44,6 +50,24 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.doesNotMatch(viewer, /audio_url|api_key|provider_settings/);
 });
 
+test("room state API is protected by a room-scoped viewer session", async () => {
+  const [roomRoute, requestRoute, verifyRoute, accessAuth] = await Promise.all([
+    readFile(new URL("../app/api/rooms/[roomId]/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[roomId]/auth/request/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[roomId]/auth/verify/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/access-auth.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(roomRoute, /authorizeViewer/);
+  assert.match(roomRoute, /verification_required/);
+  assert.match(requestRoute, /OTP_RESEND_SECONDS/);
+  assert.match(requestRoute, /email_delivery_unavailable/);
+  assert.match(verifyRoute, /OTP_MAX_ATTEMPTS|attempts_remaining/);
+  assert.match(verifyRoute, /Set-Cookie/);
+  assert.match(accessAuth, /ACCESS_LOG_RETENTION_DAYS = 30/);
+  assert.match(accessAuth, /https:\/\/api\.resend\.com\/emails/);
+  assert.doesNotMatch(requestRoute + verifyRoute + accessAuth, /console\.log\(.*code|return.*verification.*code/i);
+});
+
 test("removes the disposable starter and keeps relay boundaries explicit", async () => {
   const [page, layout, viewer, relay, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -54,7 +78,7 @@ test("removes the disposable starter and keeps relay boundaries explicit", async
   ]);
 
   assert.match(page, /Live rooms require a host invite link/);
-  assert.match(layout, /Meeting Live Translator/);
+  assert.match(layout, /VerbaRadar/);
   assert.match(viewer, /450/);
   assert.match(viewer, /evidence_segment_ids/);
   assert.match(relay, /MAX_SEGMENTS = 80/);

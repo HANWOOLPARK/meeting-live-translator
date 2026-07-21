@@ -1,4 +1,4 @@
-# Meeting Live Translator · Attendee Viewer
+# VerbaRadar · Attendee Viewer
 
 Invite-only browser view for live original captions, translations, and the
 evidence-linked Decision Radar. The installed Windows app remains the host;

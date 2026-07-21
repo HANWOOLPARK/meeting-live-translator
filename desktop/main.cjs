@@ -9,11 +9,13 @@ const appUrl = new URL(process.env.MLT_APP_URL || "http://127.0.0.1:8765/");
 const allowedOrigin = appUrl.origin;
 const readyFile = process.env.MLT_DESKTOP_READY_FILE || "";
 const preloadPath = path.join(__dirname, "preload.cjs");
+const iconPath = path.join(__dirname, "assets", "verbaradar.ico");
 const overlayWindows = new Map();
 let mainWindow = null;
 let mediaWidthPercent = 94;
 
-app.setName("Meeting Live Translator");
+app.setName("VerbaRadar");
+app.setAppUserModelId("com.verbaradar.desktop");
 app.setPath("userData", path.join(projectRoot, ".run", "electron-user-data"));
 
 const hasLock = app.requestSingleInstanceLock();
@@ -66,7 +68,8 @@ function createMainWindow() {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: "#080c14",
-    title: "Meeting Live Translator",
+    icon: iconPath,
+    title: "VerbaRadar",
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -145,10 +148,11 @@ function createOverlay(kind) {
     fullscreenable: false,
     alwaysOnTop: true,
     skipTaskbar: false,
+    icon: iconPath,
     title: {
-      caption: "Meeting Live Translator · Captions",
-      media: "Meeting Live Translator · Media Captions",
-      radar: "Meeting Live Translator · Decision Radar",
+      caption: "VerbaRadar · Captions",
+      media: "VerbaRadar · Media Captions",
+      radar: "VerbaRadar · Decision Radar",
     }[kind],
     webPreferences: {
       preload: preloadPath,
@@ -233,10 +237,14 @@ app.on("second-instance", () => {
   mainWindow.focus();
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   screen.on("display-metrics-changed", repositionMediaOverlay);
   screen.on("display-removed", repositionMediaOverlay);
+  await Promise.allSettled([
+    session.defaultSession.clearCache(),
+    session.defaultSession.clearCodeCaches({}),
+  ]);
   createMainWindow();
 });
 

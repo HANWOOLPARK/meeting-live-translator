@@ -4,7 +4,8 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable, Mapping
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
@@ -19,6 +20,9 @@ SHARE_QUEUE_MAX_SIZE = 256
 SHARE_BATCH_SIZE = 20
 SHARE_BATCH_WAIT_SECONDS = 0.12
 SHARE_HEARTBEAT_SECONDS = 30.0
+SHARE_ACCESS_LOG_RETENTION_DAYS = 30
+SHARE_ACCESS_LOG_HISTORY_LIMIT = 30
+SHARE_RELAY_USER_AGENT = "VerbaRadar/0.6"
 
 LOSSY_SHARE_EVENT_TYPES = {
     "partial_transcript",
@@ -72,6 +76,79 @@ def _safe_nonnegative_int(value: Any) -> int:
         return max(0, int(value or 0))
     except (TypeError, ValueError, OverflowError):
         return 0
+
+
+def _sanitize_access_log_snapshot(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, Mapping):
+        return None
+    room_id = _safe_identifier(value.get("room_id"))
+    if not room_id:
+        return None
+    attendees: list[dict[str, Any]] = []
+    raw_attendees = value.get("attendees")
+    if isinstance(raw_attendees, list):
+        for item in raw_attendees[:200]:
+            if not isinstance(item, Mapping):
+                continue
+            email = _clean_text(item.get("email"), maximum=254).lower()
+            if not email or "@" not in email:
+                continue
+            attendees.append(
+                {
+                    "email": email,
+                    "first_verified_at": _safe_timestamp(
+                        item.get("first_verified_at")
+                    ),
+                    "last_seen_at": _safe_timestamp(item.get("last_seen_at")),
+                    "view_count": _safe_nonnegative_int(item.get("view_count")),
+                    "active": item.get("active") is True,
+                }
+            )
+    allowed_events = {
+        "verification_code_sent",
+        "verification_code_rejected",
+        "email_delivery_failed",
+        "access_granted",
+        "viewer_entered",
+        "signed_out",
+    }
+    events: list[dict[str, Any]] = []
+    raw_events = value.get("events")
+    if isinstance(raw_events, list):
+        for item in raw_events[:300]:
+            if not isinstance(item, Mapping):
+                continue
+            event_type = _clean_text(item.get("event_type"), maximum=40)
+            email = _clean_text(item.get("email"), maximum=254).lower()
+            if event_type not in allowed_events or not email or "@" not in email:
+                continue
+            events.append(
+                {
+                    "event_id": _safe_identifier(item.get("event_id")),
+                    "email": email,
+                    "event_type": event_type,
+                    "occurred_at": _safe_timestamp(item.get("occurred_at")),
+                    "detail_code": _clean_text(
+                        item.get("detail_code"), maximum=80
+                    ),
+                }
+            )
+    status = _clean_text(value.get("status"), maximum=24).lower()
+    return {
+        "room_id": room_id,
+        "viewer_url": _clean_text(value.get("viewer_url"), maximum=2_000) or None,
+        "status": status if status in {"active", "ended", "expired"} else "ended",
+        "created_at": _safe_timestamp(value.get("created_at")),
+        "ended_at": _safe_timestamp(value.get("ended_at")),
+        "retention_days": min(
+            SHARE_ACCESS_LOG_RETENTION_DAYS,
+            max(1, _safe_nonnegative_int(value.get("retention_days")) or SHARE_ACCESS_LOG_RETENTION_DAYS),
+        ),
+        "verified_attendee_count": len(attendees),
+        "attendees": attendees,
+        "events": events,
+        "retained_until": _safe_timestamp(value.get("retained_until")),
+    }
 
 
 def _sanitize_radar_items(value: Any) -> list[dict[str, Any]]:
@@ -265,6 +342,7 @@ class ShareRelayManager:
         request_timeout_seconds: float = 5.0,
         queue_max_size: int = SHARE_QUEUE_MAX_SIZE,
         request_sender: RelayRequest | None = None,
+        audit_dir: Path | str | None = None,
     ) -> None:
         self.relay_url = str(relay_url or "").strip().rstrip("/")
         self._create_secret = str(create_secret or "").strip()
@@ -273,9 +351,11 @@ class ShareRelayManager:
             max(1, int(queue_max_size))
         )
         self._request_sender = request_sender or self._request_json
+        self._audit_dir = Path(audit_dir).resolve() if audit_dir else None
         self._worker: asyncio.Task[None] | None = None
         self._heartbeat: asyncio.Task[None] | None = None
         self._send_lock = asyncio.Lock()
+        self._audit_lock = asyncio.Lock()
         self._room_id: str | None = None
         self._host_token: str | None = None
         self._viewer_url: str | None = None
@@ -286,6 +366,8 @@ class ShareRelayManager:
         self._last_latency_ms: int | None = None
         self._dropped_events = 0
         self._sent_batches = 0
+        self._access_log: dict[str, Any] | None = None
+        self._access_history: list[dict[str, Any]] = self._load_access_history()
         self._closed = False
 
     @property
@@ -345,6 +427,24 @@ class ShareRelayManager:
         self._host_token = host_token
         self._viewer_url = viewer_url
         self._expires_at = _safe_timestamp(payload.get("expires_at"))
+        initial_access_log = _sanitize_access_log_snapshot(
+            {
+                "room_id": room_id,
+                "viewer_url": viewer_url,
+                "status": "active",
+                "created_at": _iso_now(),
+                "ended_at": None,
+                "retention_days": SHARE_ACCESS_LOG_RETENTION_DAYS,
+                "attendees": [],
+                "events": [],
+                "retained_until": (
+                    datetime.now().astimezone()
+                    + timedelta(days=SHARE_ACCESS_LOG_RETENTION_DAYS)
+                ).isoformat(timespec="milliseconds"),
+            }
+        )
+        if initial_access_log is not None:
+            await self._remember_access_log(initial_access_log)
         self._status = "active"
         self._last_error_code = None
         self._last_success_at = _iso_now()
@@ -357,6 +457,7 @@ class ShareRelayManager:
     async def stop_share(self) -> dict[str, Any]:
         room_id = self._room_id
         host_token = self._host_token
+        viewer_url = self._viewer_url
         self._room_id = None
         self._host_token = None
         self._viewer_url = None
@@ -374,12 +475,18 @@ class ShareRelayManager:
         if room_id and host_token:
             try:
                 async with self._send_lock:
-                    await self._request_sender(
+                    response = await self._request_sender(
                         "DELETE",
                         f"/api/rooms/{room_id}",
                         None,
                         host_token,
                     )
+                access_log = _sanitize_access_log_snapshot(
+                    response.get("access_log")
+                )
+                if access_log is not None:
+                    access_log["viewer_url"] = viewer_url
+                    await self._remember_access_log(access_log)
                 self._last_success_at = _iso_now()
                 self._last_error_code = None
             except Exception as error:
@@ -389,6 +496,99 @@ class ShareRelayManager:
                     type(error).__name__,
                 )
         return self.snapshot()
+
+    async def access_logs(self) -> dict[str, Any]:
+        if self._audit_dir is not None:
+            async with self._audit_lock:
+                self._access_history = await asyncio.to_thread(
+                    self._load_access_history
+                )
+                if self._access_log and not any(
+                    item.get("room_id") == self._access_log.get("room_id")
+                    for item in self._access_history
+                ):
+                    self._access_log = None
+        refresh_error: str | None = None
+        room_id = self._room_id
+        host_token = self._host_token
+        if room_id and host_token:
+            try:
+                async with self._send_lock:
+                    payload = await self._request_sender(
+                        "GET",
+                        f"/api/rooms/{room_id}/access-log",
+                        None,
+                        host_token,
+                    )
+                access_log = _sanitize_access_log_snapshot(payload)
+                if access_log is not None:
+                    access_log["viewer_url"] = self._viewer_url
+                    await self._remember_access_log(access_log)
+            except Exception as error:
+                refresh_error = self._error_code(error)
+        return {
+            "current": self._access_log,
+            "history": list(self._access_history),
+            "retention_days": SHARE_ACCESS_LOG_RETENTION_DAYS,
+            "refresh_error": refresh_error,
+        }
+
+    async def _remember_access_log(self, payload: dict[str, Any]) -> None:
+        async with self._audit_lock:
+            self._access_log = payload
+            self._access_history = [
+                payload,
+                *(
+                    item
+                    for item in self._access_history
+                    if item.get("room_id") != payload.get("room_id")
+                ),
+            ][:SHARE_ACCESS_LOG_HISTORY_LIMIT]
+            if self._audit_dir is not None:
+                await asyncio.to_thread(self._persist_access_log, payload)
+
+    def _persist_access_log(self, payload: dict[str, Any]) -> None:
+        if self._audit_dir is None:
+            return
+        room_id = _safe_identifier(payload.get("room_id"))
+        if not room_id:
+            return
+        self._audit_dir.mkdir(parents=True, exist_ok=True)
+        target = self._audit_dir / f"{room_id}.json"
+        temporary = self._audit_dir / f".{room_id}.tmp"
+        temporary.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        temporary.replace(target)
+
+    def _load_access_history(self) -> list[dict[str, Any]]:
+        if self._audit_dir is None or not self._audit_dir.exists():
+            return []
+        now = datetime.now().astimezone()
+        entries: list[dict[str, Any]] = []
+        for path in self._audit_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                sanitized = _sanitize_access_log_snapshot(payload)
+                if sanitized is None:
+                    continue
+                retained_until = sanitized.get("retained_until")
+                if retained_until:
+                    deadline = datetime.fromisoformat(
+                        str(retained_until).replace("Z", "+00:00")
+                    ).astimezone()
+                    if deadline <= now:
+                        path.unlink(missing_ok=True)
+                        continue
+                entries.append(sanitized)
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                continue
+        entries.sort(
+            key=lambda item: item.get("created_at") or "",
+            reverse=True,
+        )
+        return entries[:SHARE_ACCESS_LOG_HISTORY_LIMIT]
 
     async def publish_event(self, event: dict[str, Any]) -> None:
         if not self.active:
@@ -541,7 +741,10 @@ class ShareRelayManager:
         )
 
         def perform() -> dict[str, Any]:
-            headers = {"Accept": "application/json"}
+            headers = {
+                "Accept": "application/json",
+                "User-Agent": SHARE_RELAY_USER_AGENT,
+            }
             if payload is not None:
                 headers["Content-Type"] = "application/json"
             if bearer:
@@ -555,9 +758,30 @@ class ShareRelayManager:
                     decoded = json.loads(raw.decode("utf-8"))
                     return decoded if isinstance(decoded, dict) else {}
             except HTTPError as error:
+                relay_code = "relay_http_error"
+                try:
+                    failure = json.loads(error.read(32_000).decode("utf-8"))
+                    candidate = _clean_text(
+                        failure.get("code") if isinstance(failure, dict) else "",
+                        maximum=80,
+                    )
+                    if candidate in {
+                        "viewer_email_auth_not_configured",
+                        "room_create_failed",
+                        "unauthorized",
+                    }:
+                        relay_code = candidate
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                    pass
+                safe_message = (
+                    "공유 사이트의 이메일 인증 발송 설정이 필요합니다. "
+                    "로컬 원문 전사와 번역은 계속 사용할 수 있습니다."
+                    if relay_code == "viewer_email_auth_not_configured"
+                    else "공유 서버가 요청을 처리하지 못했습니다."
+                )
                 raise ShareRelayError(
-                    "relay_http_error",
-                    "공유 서버가 요청을 처리하지 못했습니다.",
+                    relay_code,
+                    safe_message,
                     status_code=int(error.code),
                 ) from None
             except (URLError, TimeoutError, OSError) as error:
@@ -581,6 +805,13 @@ class ShareRelayManager:
             "viewer_url": self._viewer_url if self.active else None,
             "expires_at": self._expires_at if self.active else None,
             "retention_policy": "delete_on_stop",
+            "access_control": "email_otp",
+            "access_log_retention_days": SHARE_ACCESS_LOG_RETENTION_DAYS,
+            "verified_attendee_count": (
+                _safe_nonnegative_int(self._access_log.get("verified_attendee_count"))
+                if self._access_log
+                else 0
+            ),
             "idle_timeout_seconds": SHARE_IDLE_TIMEOUT_SECONDS,
             "hard_ttl_seconds": SHARE_HARD_TTL_SECONDS,
             "external_transmission": True,
