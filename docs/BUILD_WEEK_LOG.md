@@ -1592,3 +1592,13 @@ normalization → consistent translation → captured action → evidence naviga
   Japan toward a broader platform. Codex organized and translated only those
   supplied views; the user reviewed and explicitly approved the full English
   `What I learned` and `What's next` drafts before Devpost version 7 was saved.
+- **Fourth reviewed pass:** The user defined WhyKaigi in their own words as a
+  tool for real-time translation that also identifies the meeting's focus and
+  action items. They chose fast, natural translation as the first impression,
+  explaining that many tools call themselves real-time while producing awkward
+  or delayed results. They also identified inspectable evidence as the product's
+  second distinction: decisions and actions can be checked against both the
+  translation and original source instead of appearing as unexplained AI
+  suggestions. Codex translated and structured those supplied priorities into
+  the README opening and Devpost tagline; the user reviewed and explicitly
+  approved the exact English draft before publication.

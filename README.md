@@ -1,8 +1,10 @@
 # WhyKaigi
 
-**Live translation with evidence-linked decisions.**
+**Context-aware, near-real-time meeting translation with evidence-linked decisions and action items.**
 
-WhyKaigi is a Windows-first meeting intelligence companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
+WhyKaigi is a near-real-time meeting translation tool built around one priority: translation should be fast without losing the context that makes it accurate. It uses language-aware speech boundaries and meeting context to produce more natural captions, then translates them as the conversation continues.
+
+Based on that transcript, WhyKaigi identifies the meeting's key points, decisions, and action items. Unlike meeting assistants that present suggestions without showing how they were inferred, every Decision Radar item links back to the translated caption and original source segment that supports it. The user can inspect the evidence and decide whether the result is correct.
 
 > Build Week submission track: **Work & Productivity**  
 > Public, keyless Replay: [open the verified Korean → English demo](https://meeting-live-translator-viewer.bakbaul.chatgpt.site/demo).
