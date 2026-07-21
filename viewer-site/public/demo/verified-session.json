@@ -25,7 +25,7 @@
     },
     {
       "stage": "Context",
-      "provider": "Meeting Live Translator",
+      "provider": "VerbaRadar",
       "model": "Approved terms and people"
     },
     {

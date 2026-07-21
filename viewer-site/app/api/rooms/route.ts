@@ -12,6 +12,7 @@ import {
   parseJsonBody,
   randomToken,
 } from "../../../lib/relay";
+import { cleanupAccessRecords, emailDeliveryConfigured } from "../../../lib/access-auth";
 
 export async function POST(request: Request) {
   try {
@@ -19,6 +20,9 @@ export async function POST(request: Request) {
     const expected = createSecret();
     if (!expected || bearerToken(request) !== expected) {
       return jsonResponse({ code: "unauthorized" }, 401);
+    }
+    if (!emailDeliveryConfigured()) {
+      return jsonResponse({ code: "viewer_email_auth_not_configured" }, 503);
     }
     const payload = await parseJsonBody(request, 10_000);
     if (payload.retention_policy !== "delete_on_stop") {
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
     const hostToken = randomToken(32);
     const now = Date.now();
     const expiresAt = now + hardSeconds * 1_000;
-    await cleanupTombstones();
+    await Promise.all([cleanupTombstones(), cleanupAccessRecords()]);
     await database()
       .prepare(
         "INSERT INTO share_rooms (room_id, host_token_hash, state_json, revision, status, created_at, updated_at, last_activity_at, expires_at, ended_at, retention_policy, idle_ttl_seconds) VALUES (?, ?, ?, 0, 'active', ?, ?, ?, ?, NULL, 'delete_on_stop', ?)",
@@ -61,6 +65,8 @@ export async function POST(request: Request) {
         expires_at: new Date(expiresAt).toISOString(),
         retention_policy: "delete_on_stop",
         idle_timeout_seconds: idleSeconds,
+        access_control: "email_otp",
+        access_log_retention_days: 30,
       },
       201,
     );

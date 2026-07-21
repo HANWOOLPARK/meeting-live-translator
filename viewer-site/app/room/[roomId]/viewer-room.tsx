@@ -29,6 +29,7 @@ type RoomPayload = {
 type Language = "ko" | "en";
 type ViewMode = "both" | "translation";
 type RadarTab = "core" | "decision" | "action" | "issues";
+type AccessStage = "checking" | "email" | "code" | "authenticated";
 
 const copy = {
   ko: {
@@ -64,6 +65,27 @@ const copy = {
     presenterOffline: "진행자 연결 확인 중",
     radarDelayed: "Radar 분석이 지연 중이지만 자막은 계속 표시됩니다.",
     expired: "진행자가 공유를 종료했거나 보관 기간이 만료되었습니다.",
+    accessTitle: "이메일 인증 후 입장",
+    accessLead: "초대 링크를 받은 본인의 이메일로 6자리 인증번호를 받아 입력하세요.",
+    emailLabel: "이메일",
+    emailPlaceholder: "name@example.com",
+    sendCode: "인증번호 받기",
+    codeLabel: "6자리 인증번호",
+    codePlaceholder: "000000",
+    verifyCode: "인증하고 입장",
+    resendCode: "인증번호 다시 받기",
+    changeEmail: "이메일 변경",
+    sending: "전송 중…",
+    verifying: "확인 중…",
+    codeSent: "인증번호를 이메일로 보냈습니다. 10분 안에 입력하세요.",
+    invalidEmail: "올바른 이메일 주소를 입력하세요.",
+    invalidCode: "인증번호가 올바르지 않거나 만료되었습니다.",
+    rateLimited: "요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
+    deliveryUnavailable: "인증 메일 서비스가 아직 설정되지 않았습니다. 진행자에게 알려주세요.",
+    accessError: "인증을 처리하지 못했습니다. 잠시 후 다시 시도하세요.",
+    accessPrivacy: "이메일과 링크 접속 기록은 보안 감사 목적으로 30일 보관 후 자동 삭제됩니다. 인증 메일 전송을 위해 이메일 주소가 Resend로 전달됩니다.",
+    contentPrivacy: "회의 중계 텍스트는 공유 종료 시 즉시 삭제됩니다.",
+    signOut: "나가기",
   },
   en: {
     live: "Live sharing",
@@ -98,6 +120,27 @@ const copy = {
     presenterOffline: "Checking presenter connection",
     radarDelayed: "Radar analysis is delayed. Captions continue.",
     expired: "The host ended sharing or the retention period expired.",
+    accessTitle: "Verify your email to enter",
+    accessLead: "Receive a six-digit code at your own email address before opening this invite.",
+    emailLabel: "Email",
+    emailPlaceholder: "name@example.com",
+    sendCode: "Send verification code",
+    codeLabel: "Six-digit verification code",
+    codePlaceholder: "000000",
+    verifyCode: "Verify and enter",
+    resendCode: "Send a new code",
+    changeEmail: "Use another email",
+    sending: "Sending…",
+    verifying: "Verifying…",
+    codeSent: "A verification code was sent. Enter it within 10 minutes.",
+    invalidEmail: "Enter a valid email address.",
+    invalidCode: "The verification code is invalid or expired.",
+    rateLimited: "Too many requests. Please wait and try again.",
+    deliveryUnavailable: "Email verification is not configured yet. Contact the host.",
+    accessError: "Verification could not be completed. Try again shortly.",
+    accessPrivacy: "Your email and invite access records are retained for security auditing and automatically deleted after 30 days. Your email is sent to Resend to deliver the code.",
+    contentPrivacy: "Relayed meeting text is deleted when sharing ends.",
+    signOut: "Sign out",
   },
 } as const;
 
@@ -130,6 +173,14 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
   const [radarTab, setRadarTab] = useState<RadarTab>("core");
   const [radarUnread, setRadarUnread] = useState<Record<RadarTab, number>>({ core: 0, decision: 0, action: 0, issues: 0 });
   const [evidenceNotice, setEvidenceNotice] = useState("");
+  const [accessStage, setAccessStage] = useState<AccessStage>("checking");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [challengeId, setChallengeId] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [emailDeliveryConfigured, setEmailDeliveryConfigured] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const radarScrollRef = useRef<HTMLDivElement>(null);
   const radarPinnedRef = useRef(true);
@@ -152,6 +203,42 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    const checkAccess = async () => {
+      try {
+        const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/status`, {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        });
+        if (cancelled) return;
+        if (response.status === 410) {
+          setConnection("ended");
+          return;
+        }
+        if (response.status === 404) {
+          setConnection("missing");
+          return;
+        }
+        if (!response.ok) throw new Error("access_status_failed");
+        const status = await response.json() as {
+          authenticated?: boolean;
+          email_delivery_configured?: boolean;
+        };
+        setEmailDeliveryConfigured(status.email_delivery_configured !== false);
+        setAccessStage(status.authenticated ? "authenticated" : "email");
+      } catch {
+        if (!cancelled) {
+          setAccessStage("email");
+          setAuthError(labels.accessError);
+        }
+      }
+    };
+    void checkAccess();
+    return () => { cancelled = true; };
+  }, [roomId, labels.accessError]);
+
+  useEffect(() => {
+    if (accessStage !== "authenticated") return;
+    let cancelled = false;
     let terminal = false;
     let timer = 0;
     const poll = async () => {
@@ -173,6 +260,13 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
           setConnection("missing");
           return;
         }
+        if (response.status === 401) {
+          terminal = true;
+          setPayload(null);
+          setAccessStage("email");
+          setAuthError("");
+          return;
+        }
         if (!response.ok) throw new Error("room_fetch_failed");
         const next = (await response.json()) as RoomPayload;
         setPayload(next);
@@ -190,7 +284,86 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [roomId]);
+  }, [roomId, accessStage]);
+
+  const authFailureMessage = (code: string) => {
+    if (code === "invalid_email") return labels.invalidEmail;
+    if (code === "invalid_or_expired_code") return labels.invalidCode;
+    if (code === "verification_code_rate_limited") return labels.rateLimited;
+    if (["email_delivery_unavailable", "email_delivery_failed"].includes(code)) return labels.deliveryUnavailable;
+    return labels.accessError;
+  };
+
+  const requestVerificationCode = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (authBusy) return;
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: authEmail }),
+      });
+      const result = await response.json().catch(() => ({})) as { code?: string; challenge_id?: string };
+      if (response.status === 410) {
+        setConnection("ended");
+        return;
+      }
+      if (!response.ok || !result.challenge_id) throw new Error(result.code || "verification_request_failed");
+      setChallengeId(result.challenge_id);
+      setAuthCode("");
+      setAccessStage("code");
+      setAuthMessage(labels.codeSent);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      setAuthError(authFailureMessage(code));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const verifyAccessCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (authBusy || !challengeId) return;
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ challenge_id: challengeId, code: authCode }),
+      });
+      const result = await response.json().catch(() => ({})) as { code?: string };
+      if (response.status === 410) {
+        setConnection("ended");
+        return;
+      }
+      if (!response.ok) throw new Error(result.code || "verification_failed");
+      setAuthMessage("");
+      setAuthCode("");
+      setAccessStage("authenticated");
+      setConnection("connecting");
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      setAuthError(authFailureMessage(code));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const signOut = async () => {
+    await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/logout`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+    }).catch(() => undefined);
+    setPayload(null);
+    setChallengeId("");
+    setAuthCode("");
+    setAccessStage("email");
+    setConnection("connecting");
+  };
 
   useEffect(() => {
     if (!payload || payload.revision === lastRevision.current) return;
@@ -303,10 +476,80 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     return (
       <main className="viewer-ended" data-testid="room-ended">
         <div className="ended-mark" aria-hidden="true">×</div>
-        <p className="viewer-eyebrow">MEETING LIVE TRANSLATOR</p>
+        <p className="viewer-eyebrow">VERBARADAR</p>
         <h1>{connectionLabel}</h1>
         <p>{labels.expired}</p>
         <div className="privacy-chip">{labels.retention}</div>
+      </main>
+    );
+  }
+
+  if (accessStage !== "authenticated") {
+    return (
+      <main className="viewer-access" data-testid="viewer-access-gate">
+        <section className="access-card" aria-busy={authBusy}>
+          <header className="access-header">
+            <div className="viewer-brand">
+              <span className="brand-signal verbaradar-mark" aria-hidden="true" />
+              <div><p>VERBARADAR</p><h1>Secure shared meeting</h1></div>
+            </div>
+            <div className="language-toggle" aria-label="Language">
+              <button type="button" className={language === "ko" ? "active" : ""} onClick={() => chooseLanguage("ko")}>한국어</button>
+              <button type="button" className={language === "en" ? "active" : ""} onClick={() => chooseLanguage("en")}>English</button>
+            </div>
+          </header>
+          <div className="access-lock" aria-hidden="true">✦</div>
+          <p className="viewer-eyebrow">EMAIL · ONE-TIME CODE</p>
+          <h2>{labels.accessTitle}</h2>
+          <p className="access-lead">{labels.accessLead}</p>
+          {accessStage === "checking" ? (
+            <div className="access-checking"><i />{language === "ko" ? "초대 링크 확인 중…" : "Checking invite…"}</div>
+          ) : accessStage === "email" ? (
+            <form className="access-form" onSubmit={requestVerificationCode}>
+              <label htmlFor="viewer-email">{labels.emailLabel}</label>
+              <input
+                id="viewer-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                value={authEmail}
+                placeholder={labels.emailPlaceholder}
+                onChange={(event) => setAuthEmail(event.target.value)}
+              />
+              <button type="submit" disabled={authBusy || !emailDeliveryConfigured}>
+                {authBusy ? labels.sending : labels.sendCode}
+              </button>
+            </form>
+          ) : (
+            <form className="access-form" onSubmit={verifyAccessCode}>
+              <div className="access-email-row"><span>{authEmail}</span><button type="button" onClick={() => { setAccessStage("email"); setAuthError(""); setAuthMessage(""); }}>{labels.changeEmail}</button></div>
+              <label htmlFor="viewer-code">{labels.codeLabel}</label>
+              <input
+                id="viewer-code"
+                className="access-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                value={authCode}
+                placeholder={labels.codePlaceholder}
+                onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              <button type="submit" disabled={authBusy || authCode.length !== 6}>
+                {authBusy ? labels.verifying : labels.verifyCode}
+              </button>
+              <button className="access-secondary" type="button" disabled={authBusy} onClick={() => void requestVerificationCode()}>{labels.resendCode}</button>
+            </form>
+          )}
+          {!emailDeliveryConfigured && <p className="access-error" role="alert">{labels.deliveryUnavailable}</p>}
+          {authMessage && <p className="access-message" role="status">{authMessage}</p>}
+          {authError && <p className="access-error" role="alert">{authError}</p>}
+          <aside className="access-privacy"><strong>{labels.contentPrivacy}</strong><span>{labels.accessPrivacy}</span></aside>
+        </section>
       </main>
     );
   }
@@ -315,14 +558,15 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     <main className="viewer-shell" data-testid="viewer-room">
       <header className="viewer-header">
         <div className="viewer-brand">
-          <span className="brand-signal" aria-hidden="true"><i /><i /><i /><i /><i /></span>
-          <div><p>MEETING LIVE TRANSLATOR</p><h1>Shared meeting view</h1></div>
+          <span className="brand-signal verbaradar-mark" aria-hidden="true" />
+          <div><p>VERBARADAR</p><h1>Shared meeting view</h1></div>
         </div>
         <div className="viewer-header-actions">
           <div className="language-toggle" aria-label="Language">
             <button className={language === "ko" ? "active" : ""} onClick={() => chooseLanguage("ko")}>한국어</button>
             <button className={language === "en" ? "active" : ""} onClick={() => chooseLanguage("en")}>English</button>
           </div>
+          <button className="viewer-sign-out" type="button" onClick={() => void signOut()}>{labels.signOut}</button>
           <span className={`connection-pill ${connection}`}><i />{connectionLabel}</span>
         </div>
       </header>

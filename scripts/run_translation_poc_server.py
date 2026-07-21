@@ -29,7 +29,7 @@ from scripts.translation_poc_ipc import SubprocessM2M100Provider  # noqa: E402
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Meeting Live Translator isolated translation PoC")
+    parser = argparse.ArgumentParser(description="VerbaRadar isolated translation PoC")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument(

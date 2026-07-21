@@ -1,2 +1,1 @@
-"""Backend package for meeting-live-translator."""
-
+"""Backend package for VerbaRadar."""

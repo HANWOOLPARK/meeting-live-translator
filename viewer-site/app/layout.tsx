@@ -14,32 +14,32 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Meeting Live Translator",
-    template: "%s · Meeting Live Translator",
+    default: "VerbaRadar",
+    template: "%s · VerbaRadar",
   },
   description: "Live translation with evidence-linked decisions: preserve, translate, verify, and act.",
   openGraph: {
-    title: "Meeting Live Translator",
+    title: "VerbaRadar",
     description: "Live translation with evidence-linked decisions.",
     type: "website",
     images: [
       {
-        url: "/og-meeting-live-translator.png",
-        width: 1664,
-        height: 948,
-        alt: "Meeting Live Translator live captions and Decision Radar",
+        url: "/og-verbaradar.jpg",
+        width: 1536,
+        height: 1024,
+        alt: "VerbaRadar live captions and evidence-linked Decision Radar",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Meeting Live Translator",
+    title: "VerbaRadar",
     description: "Preserve the original. Translate live. Verify every decision.",
-    images: ["/og-meeting-live-translator.png"],
+    images: ["/og-verbaradar.jpg"],
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/verbaradar-icon.png",
+    shortcut: "/verbaradar-icon.png",
   },
 };
 

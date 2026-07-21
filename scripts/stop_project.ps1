@@ -98,7 +98,7 @@ if ($null -ne $desktopProcessId) {
             }
             Remove-MatchingPidFile -Path $desktopPidFile -ProcessId $desktopProcessId
             Remove-Item -LiteralPath $desktopReadyFile -Force -ErrorAction SilentlyContinue
-            Write-Output "Meeting Live Translator desktop stopped. PID: $desktopProcessId"
+            Write-Output "VerbaRadar desktop stopped. PID: $desktopProcessId"
         }
         catch {
             Write-Error "Could not stop the validated desktop PID $desktopProcessId."
@@ -182,7 +182,7 @@ if ($null -ne $serverOwned) {
             throw "Server process did not exit within 10 seconds."
         }
         Remove-MatchingPidFile -Path $serverPidFile -ProcessId $serverProcessId
-        Write-Output "Meeting Live Translator server stopped. PID: $serverProcessId"
+        Write-Output "VerbaRadar server stopped. PID: $serverProcessId"
     }
     catch {
         Write-Error "Could not stop the validated project server PID $serverProcessId."
@@ -190,7 +190,7 @@ if ($null -ne $serverOwned) {
     }
 }
 elseif (-not (Test-Path -LiteralPath $serverPidFile)) {
-    Write-Output "Meeting Live Translator server is not running."
+    Write-Output "VerbaRadar server is not running."
 }
 
 $currentWorkerProcessId = Read-SavedProcessId -Path $workerPidFile -Label "Worker"
@@ -242,5 +242,5 @@ if ($listeners.Count -gt 0) {
 if ($failed) {
     exit 1
 }
-Write-Output "Meeting Live Translator stopped. Project PID files are clean."
+Write-Output "VerbaRadar stopped. Project PID files are clean."
 exit 0

@@ -1,4 +1,4 @@
-# Meeting Live Translator Lite 배포 안내
+# VerbaRadar Lite 배포 안내
 
 이 ZIP은 Windows 11용 소스 기반 Lite 배포본입니다. 가상환경, 로컬 번역 모델, API 키, 기존 세션, 로그는 포함하지 않습니다.
 

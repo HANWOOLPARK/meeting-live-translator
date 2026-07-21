@@ -10,10 +10,11 @@
       content="Windows 시스템 음성 또는 마이크의 일본어·영어·한국어 원문과 선택적 번역을 표시하는 로컬 앱"
       data-i18n-content="Windows 시스템 음성 또는 마이크의 일본어·영어·한국어 원문과 선택적 번역을 표시하는 로컬 앱"
     >
-    <title>Meeting Live Translator · Decision Radar</title>
-    <link rel="stylesheet" href="/static/style.css?v=language-directions-20260720">
-    <script src="/static/i18n.js?v=language-directions-20260720" defer></script>
-    <script src="/static/app.js?v=language-directions-20260720" defer></script>
+    <title>VerbaRadar · Evidence-linked Meeting Intelligence</title>
+    <link rel="icon" type="image/png" href="/static/assets/verbaradar-icon.png?v=verbaradar-20260721">
+    <link rel="stylesheet" href="/static/style.css?v=verbaradar-20260721">
+    <script src="/static/i18n.js?v=verbaradar-20260721" defer></script>
+    <script src="/static/app.js?v=verbaradar-20260721" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#captions" data-i18n="자막으로 바로가기">자막으로 바로가기</a>
@@ -24,14 +25,10 @@
     <div class="app-shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path d="M4 12h2.5l1.4-5.2 2.7 10.4 2.5-8.1 1.9 5.7 1-2.8H20" />
-            </svg>
-          </span>
+          <img class="brand-mark" src="/static/assets/verbaradar-icon.png?v=verbaradar-20260721" alt="" aria-hidden="true">
           <div>
             <div class="eyebrow">LOCAL · NEAR-REAL-TIME</div>
-            <h1>Meeting Live Translator</h1>
+            <h1>VerbaRadar</h1>
           </div>
           <span class="phase-pill">Context Engine</span>
         </div>
@@ -239,6 +236,14 @@
                   <dt data-i18n="보관 기간">보관 기간</dt>
                   <dd data-i18n="공유 종료 즉시 삭제 · 비정상 종료 시 15분 유휴 만료 · 최대 8시간">공유 종료 즉시 삭제 · 비정상 종료 시 15분 유휴 만료 · 최대 8시간</dd>
                 </div>
+                <div>
+                  <dt data-i18n="이메일 인증">이메일 인증</dt>
+                  <dd data-i18n="참석자는 이메일로 받은 6자리 인증번호를 입력한 뒤 입장합니다.">참석자는 이메일로 받은 6자리 인증번호를 입력한 뒤 입장합니다.</dd>
+                </div>
+                <div>
+                  <dt data-i18n="접속 로그">접속 로그</dt>
+                  <dd data-i18n="인증 이메일·접속 시각 30일 보관 후 자동 삭제">인증 이메일·접속 시각 30일 보관 후 자동 삭제</dd>
+                </div>
               </dl>
             </div>
 
@@ -259,9 +264,29 @@
                 <div>
                   <input id="liveShareUrl" type="url" readonly>
                   <button class="button button-secondary button-compact" id="copyLiveShareLinkButton" type="button" data-i18n="링크 복사">링크 복사</button>
-                  <button class="button button-ghost button-compact" id="openLiveShareLinkButton" type="button" data-i18n="보기 화면 열기">보기 화면 열기</button>
                 </div>
               </div>
+              <section class="live-share-audit" id="liveShareAuditPanel" aria-labelledby="liveShareAuditTitle" hidden>
+                <div class="live-share-audit-heading">
+                  <div>
+                    <h4 id="liveShareAuditTitle" data-i18n="링크별 접속 기록">링크별 접속 기록</h4>
+                    <p data-i18n="인증된 이메일과 접속 시각을 30일간 보관합니다.">인증된 이메일과 접속 시각을 30일간 보관합니다.</p>
+                  </div>
+                  <button class="button button-ghost button-compact" id="refreshLiveShareAuditButton" type="button" data-i18n="새로고침">새로고침</button>
+                </div>
+                <label class="live-share-audit-select" for="liveShareAuditRoomSelect">
+                  <span data-i18n="공유 링크">공유 링크</span>
+                  <select id="liveShareAuditRoomSelect"></select>
+                </label>
+                <div class="live-share-audit-summary">
+                  <span><strong id="liveShareVerifiedCount">0</strong> <span data-i18n="명 인증">명 인증</span></span>
+                  <span><strong id="liveShareRejectedCount">0</strong> <span data-i18n="회 코드 거절">회 코드 거절</span></span>
+                </div>
+                <ol class="live-share-attendees" id="liveShareAttendeeList"></ol>
+                <p class="live-share-audit-empty" id="liveShareAuditEmpty" data-i18n="아직 인증 후 입장한 참석자가 없습니다.">아직 인증 후 입장한 참석자가 없습니다.</p>
+                <p class="live-share-audit-error" id="liveShareAuditError" role="alert" hidden></p>
+              </section>
+              <button id="openLiveShareLinkButton" type="button" hidden aria-hidden="true" tabindex="-1"></button>
               <p class="live-share-feedback" id="liveShareFeedback" role="status" hidden></p>
               <p class="live-share-error" id="liveShareError" role="alert" hidden></p>
             </div>

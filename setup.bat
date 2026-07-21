@@ -10,7 +10,7 @@ if /I "%LOCAL_OPTION%"=="/?" goto :usage
 if defined LOCAL_OPTION if /I not "%LOCAL_OPTION%"=="/local" if /I not "%LOCAL_OPTION%"=="/no-local" goto :usage_error
 
 echo ============================================================
-echo Meeting Live Translator - Lite setup
+echo VerbaRadar - Lite setup
 echo ============================================================
 echo Project: %PROJECT_ROOT%
 echo This script creates only project-local virtual environments.

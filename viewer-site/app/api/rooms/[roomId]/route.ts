@@ -9,10 +9,18 @@ import {
   publicState,
   validRoomId,
 } from "../../../../lib/relay";
+import {
+  ACCESS_LOG_RETENTION_DAYS,
+  authorizeViewer,
+  emailDeliveryConfigured,
+  hostAccessSnapshot,
+  revokeRoomSessions,
+  touchViewerSession,
+} from "../../../../lib/access-auth";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   await ensureSchema();
   const { roomId } = await context.params;
   if (!validRoomId(roomId)) return jsonResponse({ code: "room_not_found" }, 404);
@@ -22,6 +30,16 @@ export async function GET(_request: Request, context: RouteContext) {
   if (room.status !== "active") {
     return jsonResponse({ code: "room_ended", status: "ended" }, 410);
   }
+  const hostAuthorized = await authorizeHost(request, room);
+  const viewerSession = hostAuthorized ? null : await authorizeViewer(request, roomId);
+  if (!hostAuthorized && !viewerSession) {
+    return jsonResponse({
+      code: "verification_required",
+      email_delivery_configured: emailDeliveryConfigured(),
+      access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
+    }, 401);
+  }
+  if (viewerSession) await touchViewerSession(request, viewerSession);
   const now = Date.now();
   return jsonResponse({
     room_id: room.room_id,
@@ -43,6 +61,8 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!(await authorizeHost(request, room))) {
     return jsonResponse({ code: "unauthorized" }, 401);
   }
+  await revokeRoomSessions(roomId);
+  const accessLog = await hostAccessSnapshot(room);
   const now = Date.now();
   await database()
     .prepare(
@@ -50,5 +70,14 @@ export async function DELETE(request: Request, context: RouteContext) {
     )
     .bind(now, now, now, now + 5 * 60 * 1_000, roomId)
     .run();
-  return jsonResponse({ deleted: true, room_id: roomId });
+  return jsonResponse({
+    deleted: true,
+    room_id: roomId,
+    access_log: {
+      ...accessLog,
+      status: "ended",
+      ended_at: new Date(now).toISOString(),
+      attendees: accessLog.attendees.map((attendee) => ({ ...attendee, active: false })),
+    },
+  });
 }

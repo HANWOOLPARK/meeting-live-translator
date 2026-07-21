@@ -38,7 +38,7 @@ call :is_owned_process "%EXISTING_PID%"
 if errorlevel 1 goto :stale_existing_pid
 call :is_healthy_server "%EXISTING_PID%"
 if errorlevel 1 goto :existing_server_unhealthy
-echo Meeting Live Translator is already running. PID: %EXISTING_PID%
+echo VerbaRadar is already running. PID: %EXISTING_PID%
 call :wait_for_worker
 call :open_app
 exit /b 0
@@ -49,7 +49,7 @@ del /q "%MLT_PID_FILE%" >nul 2>&1
 
 :no_existing_pid
 
-echo Starting Meeting Live Translator on %MLT_APP_URL%
+echo Starting VerbaRadar on %MLT_APP_URL%
 echo Logs:
 echo   %MLT_STDOUT_LOG%
 echo   %MLT_STDERR_LOG%

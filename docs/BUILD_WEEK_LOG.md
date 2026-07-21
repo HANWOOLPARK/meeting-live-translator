@@ -1276,3 +1276,216 @@ normalization → consistent translation → captured action → evidence naviga
   and deployed successfully to the existing public URL. Anonymous checks returned
   200 for `/` and `/demo`; the deployed MP3 was 919,721 bytes with the expected
   SHA-256; a secret-free room creation request remained denied with 401.
+## 38. Email-verified participant links and per-link access audit — 2026-07-20 18:27 KST
+
+- **User problem:** A public participant link could be opened by anyone who
+  obtained the room URL, and the host could not tell which recipients had
+  actually entered. The requested product contract was external-recipient access
+  without installation, an email plus verification-code gate before viewing, and
+  a link-specific access record for the host.
+- **Product decision:** Keep the Sites application public but make every live room
+  fail closed behind an application-owned email OTP. A link alone grants no room
+  state. Separate short-lived authentication data from the meeting relay text:
+  raw codes are never stored, OTP challenges are retained for at most 24 hours,
+  relay text still deletes on stop/expiry, and verified-email/access audit data is
+  retained for 30 days. Raw IP addresses are replaced with a secret-keyed HMAC.
+- **Authentication implementation:** Added six-digit cryptographically generated
+  codes, a ten-minute expiry, five-attempt lock, 45-second resend interval,
+  15-minute per-email/per-IP limits, HMAC-bound code hashes, constant-time hash
+  comparison, one-time challenge consumption, and room-scoped
+  Secure/HttpOnly/SameSite=Strict viewer sessions. The room-state endpoint now
+  returns 401 before verification; host bearer access remains available. Logout,
+  room stop, hard expiry, and session expiry deny further content access.
+- **Delivery and fail-closed boundary:** OTP mail uses the Resend HTTPS API with an
+  idempotency key and a sending-only runtime credential. Room creation is rejected
+  with a safe configuration error unless a valid sender, API key, and at least
+  32-character signing secret are available. The key is never accepted by the
+  browser or stored in source. Production requires a user-owned verified sender
+  domain; no live mail was sent during this change because those external
+  credentials were not available.
+- **Audit implementation:** D1 now separates challenges, viewer sessions, and
+  access events. The host-token-only access-log endpoint aggregates verified
+  email, first verification, last seen, active-within-60-seconds state, view
+  count, and bounded events per room. The local FastAPI relay fetches this record,
+  shows it in the collapsible sharing panel, polls every ten seconds while active,
+  and saves a secret-free final copy under `data/share-access`. These files are
+  ignored by Git, pruned after retention, and never modify session JSONL.
+- **Participant and host UX:** The viewer now shows a Korean/English email entry
+  and one-time-code screen before any caption/Radar polling begins. It discloses
+  Resend delivery and the 30-day audit retention, survives refresh with the secure
+  cookie, and provides sign-out. The host panel adds link history, verified and
+  rejected counts, attendee email, first/last access, active state, manual refresh,
+  and the new retention/authentication consent boundary.
+- **Changed components:** `viewer-site/lib/access-auth*.ts`, room auth/access-log
+  routes, protected room route, D1 schema and migration `0002`, viewer UI/CSS and
+  tests, `backend/app/sharing/manager.py`, local share API, host HTML/JS/CSS/i18n,
+  sharing tests, ignored audit directory, runtime examples, READMEs, live-share
+  report, and this record.
+- **Actual verification:** Targeted sharing/UI/i18n tests passed `24/24`. Full
+  Python regression and compile check passed `359 passed, 3 skipped`; the skips
+  remain the explicitly gated live OpenAI analysis, OpenAI translation, and local
+  translation tests. Viewer ESLint had zero warnings, production build succeeded,
+  and all 12 Node tests passed, including OTP generation/hash/cookie contracts.
+  A local Vinext+D1 route run passed `anonymous room 401 → auth status false →
+  invalid challenge 400 → host room 200 → host audit 200 → delete 200 → ended
+  410`; its exact Node PID tree and test port were cleaned. The 456 existing
+  session files, including 107 JSONL files and 5,600,489 bytes, retained aggregate
+  SHA-256 `9263139A75FE0108382864618ED3D9A489C7BD280120D636EBE188AA46456DE8`
+  before and after the final regression.
+- **Failures, trade-offs, and remaining step:** The first local dev harness timed
+  out while requesting the IPv4 address even though Vinext had bound IPv6
+  localhost; its exact PID/port were cleaned. A second script incorrectly attached
+  an empty body to GET and failed in PowerShell before the product route; it was
+  corrected. Direct `vinext start` remains unsuitable for this Cloudflare-targeted
+  build because Node cannot load `cloudflare:` URLs, so the successful runtime
+  check used Vinext dev+D1 as in prior relay verification. The existing Sites
+  version remains live and unchanged: deploying the new fail-closed version before
+  configuring a verified Resend sender would disable new room creation. Final
+  production deployment and real code-receipt/refresh/log/stop E2E therefore wait
+  for the user's verified sender domain and sending-only Resend key.
+- **Codex/GPT-5.6 collaboration evidence:** In this Codex task, the user's access
+  requirement was decomposed into link entropy, verified identity, brute-force and
+  resend limits, session scope, privacy retention, host observability, failure
+  isolation, and deployment safety. The implementation and evidence above were
+  produced without inventing a Devpost session ID or claiming an unrun live-email
+  test.
+
+## 39. OTP production release attempt and safe rollback — 2026-07-21 KST
+
+- **User action:** The user configured the Resend test sender and a local API key,
+  authorizing the pending production deployment and live delivery check.
+- **Pre-deploy verification:** The secret file remained untracked, its values were
+  never printed, the Viewer production build and ESLint passed, all 12 Viewer Node
+  tests passed, `git diff --check` passed, and the deployment-source secret scan was
+  clean.
+- **Release attempt:** Sites runtime revision 3 received the Resend key, test sender,
+  and a newly generated 48-byte OTP signing secret while preserving the existing
+  relay-create secret. Viewer version 7 was saved from the exact pushed source and
+  deployed successfully with the D1 OTP migration.
+- **Production probe:** Room creation returned 201 with `access_control=email_otp`,
+  anonymous room-state access returned 401, auth status returned 200 with delivery
+  configured, and the host-only access-log endpoint returned 200. The OTP request
+  returned 503 because a direct safe Resend diagnostic reported `401 API key is
+  invalid`; no key value was logged or persisted in source.
+- **Recovery:** To avoid leaving all participant links unable to authenticate, the
+  three OTP mail variables were removed from Sites, the previous stable Viewer
+  version 6 was redeployed with environment revision 4, and the known test room was
+  deleted successfully. The existing relay-create secret was preserved. One empty
+  room created by the first diagnostic harness has no recoverable host token and
+  expires automatically under the 15-minute idle policy.
+- **Remaining step:** Create a new active Resend API key, replace only the local
+  `RESEND_API_KEY`, and repeat the version-7 deployment and real code-receipt flow.
+  Until then, production intentionally remains on the pre-OTP link-sharing behavior.
+
+## 40. OTP production redeployment with a valid Resend key — 2026-07-21 KST
+
+- **Credential recovery:** The user replaced the rejected key and independently
+  confirmed that Resend could deliver a test message from `onboarding@resend.dev`
+  to the account email. The replacement local key retained the expected format,
+  remained outside Git, and was never printed.
+- **Production configuration:** Sites environment revision 5 received the new
+  Resend key, the test sender, and a newly generated 48-byte signing secret while
+  preserving the existing relay-create secret.
+- **Deployment:** The already validated and saved email-OTP Viewer version 7 was
+  redeployed successfully to the existing public Sites URL.
+- **Live production evidence:** A new room returned 201 with email-OTP access,
+  anonymous room-state access returned 401, auth status returned 200 with mail
+  delivery configured, the Resend-backed OTP request returned 202, and the
+  host-only audit endpoint returned 200 with a `verification_code_sent` event.
+- **Pending human boundary:** The user must enter the received code in the test
+  room before verified-session cookie, refresh persistence, attendee identity,
+  and final room deletion can be confirmed. The test room contains no meeting
+  content and expires under the configured idle policy if unused.
+
+## 41. Expired-room recreation failure fix - 2026-07-21 KST
+
+- **Observed failure:** After an earlier shared room expired, starting another
+  share from the desktop UI produced only the generic relay error.
+- **Root causes:** The local ignored `.share.env` still targeted a stale Vinext
+  development relay on port 3000. After correcting it to the production Viewer,
+  Cloudflare rejected Python urllib's default browser signature with error 1010
+  before the request reached the Sites worker.
+- **Fix:** The ignored local relay URL now targets the deployed Viewer, the stale
+  owned development process was stopped, and every backend relay request now sends
+  the stable product user agent `MeetingLiveTranslator/0.6`.
+- **Verification:** All 7 focused live-share tests passed, including a new contract
+  test for the explicit user agent. After restarting the desktop application, a
+  real request through the local FastAPI endpoint created a production room, and
+  the matching stop request deleted it. The final local share state was `idle` and
+  inactive. No production redeployment was required.
+
+## 42. Redundant host viewer button removal - 2026-07-21 KST
+
+- **User feedback:** The host-side `Open viewer` action duplicated the invite-link
+  copy flow and was confusing because the hardened Electron shell denies arbitrary
+  popup windows.
+- **Change:** Removed the button, its translation entry, DOM binding, disabled-state
+  update, click handler, and popup helper. Invite-link copying, email verification,
+  participant viewing, and per-link access logs remain unchanged.
+
+## 43. VerbaRadar product rebrand and icon rollout - 2026-07-21 KST
+
+- **User direction:** The user selected `VerbaRadar` as the product-facing name
+  for the Build Week submission and future commercial service, replacing the
+  generic `Meeting Live Translator` label across the application and public
+  Viewer.
+- **Visual identity:** Generated a 3:2 Devpost brand asset and derived a clean
+  square application icon plus Windows ICO. The same verified speech-bubble and
+  radar mark now identifies the desktop window, caption surfaces, main UI,
+  public Viewer, social preview, and OTP email sender copy.
+- **Product changes:** Updated visible titles, metadata, navigation branding,
+  export headings, package descriptions, setup/start/stop messages, Lite release
+  naming, documentation, and public replay attribution to `VerbaRadar`. Electron
+  now supplies the icon to both native windows and registers the application as
+  `VerbaRadar` for Windows taskbar grouping.
+- **Compatibility boundary:** Retained existing `MLT_*` environment variables,
+  storage keys, session formats, relay protocol, working-directory name, and the
+  already distributed public Viewer URL. This avoids invalidating installations,
+  saved sessions, active participant links, or secrets while changing only the
+  product-facing identity.
+- **Deployment:** Published Viewer version 8 with environment revision 6 to the
+  existing Sites project. Production landing, demo, icon asset, and active-room
+  authentication endpoints all returned HTTP 200; the active room remained
+  available throughout deployment.
+- **Verification:** Full Python regression passed `363 passed, 3 skipped` with
+  only explicitly gated live-provider tests skipped. Viewer ESLint and production
+  build passed, and the deployment retained the existing room and data stores.
+- **Operational note:** The running desktop process was intentionally not
+  restarted while sharing was active. The new native window/taskbar icon and app
+  name take effect on the next normal `stop_all.bat` / `start_all.bat` cycle.
+
+## 44. Renderer cache repair and recorded-audio demo restoration - 2026-07-21 KST
+
+- **Observed regression:** After the VerbaRadar rebrand, the Electron header
+  showed an empty icon and initialization stopped with
+  `Cannot set properties of null (setting 'disabled')`, leaving controls in their
+  loading state.
+- **Root cause:** Electron had combined the newly deployed HTML, where the
+  redundant host viewer button no longer exists, with a cached older JavaScript
+  bundle that still accessed that button. The same stale CSS expected an inline
+  SVG while the new header used the generated icon asset.
+- **Repair:** Added no-store headers for app-shell and static responses, assigned a
+  release-specific cache token to every renderer asset, cleared Electron HTTP and
+  code caches before creating the main window, rendered the real PNG in the brand
+  mark, and retained a hidden compatibility target for any already-cached bundle.
+  Local settings and session storage remain untouched.
+- **Real-app verification:** Restarted only VerbaRadar-owned processes. The live
+  Electron window displayed the icon, populated the selected loopback device,
+  reached app-ready and WebSocket-connected states, and opened the Context Engine
+  panel through an actual click with no error banner. The translation worker and
+  FastAPI diagnostics were healthy.
+- **Demo correction:** Restored the previously verified, consented scripted demo
+  recording and synchronized replay fixture from the merged audio-demo work. The
+  public MP3 is 919,721 bytes (76.565 seconds) with SHA-256
+  `96870E48C9AEDF776AC912EED27E37DED2A0D8E7F6B44E6F9A0C4D41740F089F`.
+  No private session audio or identifiers are included.
+- **Production deployment:** Published Sites Viewer version 9 from source commit
+  `71d09959a9dd0efa9f4f6d74166ad2355ed4ab1d`, preserving environment revision 6
+  and the existing public URL. The deployed audio downloaded with the exact same
+  byte count and SHA-256; the public demo exposed the audio controls, bilingual UI,
+  5 finalized captions, 5 translations, 5 context corrections, and 12 verified
+  Radar evidence links.
+- **Regression evidence:** Full Python regression passed `366 passed, 3 skipped`;
+  the three skips remain explicitly gated live-provider tests. Viewer production
+  build and ESLint passed, all 12 Viewer tests passed, 33 focused renderer tests
+  passed, and JavaScript syntax checks passed.
