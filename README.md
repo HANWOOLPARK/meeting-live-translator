@@ -59,7 +59,7 @@ The Replay contains sanitized event timing and model output from the real run, s
 - Evidence-linked decisions, action items, open questions, and confirmation needs.
 - Separate caption, one-line media caption, and Radar windows; optional Electron always-on-top transparent overlays.
 - Local append-only sessions, JSONL records, recovery, and exports.
-- Email-verified, read-only participant sharing and a public verified Replay.
+- Google-verified, read-only participant sharing with Supabase identity auditing and a public verified Replay.
 - Korean/English UI.
 
 ## Architecture and failure boundaries
@@ -92,11 +92,11 @@ Queues are bounded, Provider calls are asynchronous, and every external failure 
 - API keys remain in the local `.env` or hosted secret configuration and are never returned by diagnostics.
 - `.env`, `.share.env`, sessions, logs, PID files, models, runtimes, and virtual environments are excluded from source and Lite releases.
 - Participant sharing requires explicit consent and displays external-transfer and retention notices.
-- Invite links require a six-digit email OTP before room data is fetched. Codes expire after ten minutes,
-  attempts and resends are bounded, session cookies are room-scoped and HTTP-only, and raw codes/IPs are
-  never stored.
+- Invite links require a verified Google identity before room data is fetched. The Viewer validates the
+  Supabase access token server-side and then issues a room-scoped HTTP-only session cookie.
 - Relayed meeting text is deleted when sharing ends. Link-specific verified-email/access audit records are
-  retained separately for 30 days; local audit files never modify session JSONL.
+  retained separately for 30 days in the operational relay log and the Supabase identity registry; local
+  audit files never modify session JSONL.
 
 ## Install on Windows 11
 

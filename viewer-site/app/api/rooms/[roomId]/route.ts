@@ -12,11 +12,11 @@ import {
 import {
   ACCESS_LOG_RETENTION_DAYS,
   authorizeViewer,
-  emailDeliveryConfigured,
   hostAccessSnapshot,
   revokeRoomSessions,
   touchViewerSession,
 } from "../../../../lib/access-auth";
+import { supabaseAuthConfigured } from "../../../../lib/supabase-auth";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
 
@@ -34,8 +34,8 @@ export async function GET(request: Request, context: RouteContext) {
   const viewerSession = hostAuthorized ? null : await authorizeViewer(request, roomId);
   if (!hostAuthorized && !viewerSession) {
     return jsonResponse({
-      code: "verification_required",
-      email_delivery_configured: emailDeliveryConfigured(),
+      code: "google_identity_required",
+      supabase_auth_configured: supabaseAuthConfigured(),
       access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
     }, 401);
   }

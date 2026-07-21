@@ -22,6 +22,7 @@ export const ACCESS_LOG_RETENTION_DAYS = 30;
 const ACCESS_LOG_RETENTION_MS = ACCESS_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1_000;
 
 type RuntimeEnv = typeof env & {
+  MLT_ACCESS_SIGNING_SECRET?: string;
   RESEND_API_KEY?: string;
   MLT_OTP_FROM_EMAIL?: string;
   MLT_OTP_SIGNING_SECRET?: string;
@@ -56,7 +57,11 @@ function runtime() {
 }
 
 export function otpSigningSecret() {
-  return (runtime().MLT_OTP_SIGNING_SECRET ?? createSecret()).trim();
+  return (
+    runtime().MLT_ACCESS_SIGNING_SECRET
+    ?? runtime().MLT_OTP_SIGNING_SECRET
+    ?? createSecret()
+  ).trim();
 }
 
 export function emailDeliveryConfigured() {

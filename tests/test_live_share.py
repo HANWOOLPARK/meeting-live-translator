@@ -297,7 +297,7 @@ def test_share_api_requires_consent_and_never_returns_host_token(tmp_path) -> No
         assert diagnostics["active"] is True
         assert diagnostics["external_transmission"] is True
         assert "past_sessions" in diagnostics["excluded_data"]
-        assert diagnostics["access_control"] == "email_otp"
+        assert diagnostics["access_control"] == "supabase_google"
 
         access_log = client.get("/api/share/access-log")
         assert access_log.status_code == 200

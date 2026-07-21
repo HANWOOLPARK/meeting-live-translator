@@ -1,0 +1,7 @@
+minimumReleaseAgeExclude:
+  - '@supabase/auth-js@2.110.8'
+  - '@supabase/functions-js@2.110.8'
+  - '@supabase/postgrest-js@2.110.8'
+  - '@supabase/realtime-js@2.110.8'
+  - '@supabase/storage-js@2.110.8'
+  - '@supabase/supabase-js@2.110.8'

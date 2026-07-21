@@ -53,9 +53,10 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.match(viewer, /data-testid="viewer-room"/);
   assert.match(viewer, /data-testid="viewer-access-gate"/);
   assert.match(viewer, /\/auth\/status/);
-  assert.match(viewer, /\/auth\/request/);
-  assert.match(viewer, /\/auth\/verify/);
-  assert.match(viewer, /one-time-code/);
+  assert.match(viewer, /\/auth\/supabase/);
+  assert.match(viewer, /signInWithOAuth/);
+  assert.match(viewer, /provider: "google"/);
+  assert.match(viewer, /Google.*Supabase/s);
   assert.match(viewer, /30일/);
   assert.match(viewer, /Shared meeting view/);
   assert.match(viewer, /API keys/);
@@ -69,22 +70,29 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.doesNotMatch(viewer, /audio_url|api_key|provider_settings/);
 });
 
-test("room state API is protected by a room-scoped viewer session", async () => {
-  const [roomRoute, requestRoute, verifyRoute, accessAuth] = await Promise.all([
+test("room state API exchanges a verified Supabase Google identity for a room-scoped session", async () => {
+  const [roomRoute, supabaseRoute, supabaseAuth, migration, accessAuth] = await Promise.all([
     readFile(new URL("../app/api/rooms/[roomId]/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/rooms/[roomId]/auth/request/route.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/api/rooms/[roomId]/auth/verify/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[roomId]/auth/supabase/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/supabase-auth.ts", import.meta.url), "utf8"),
+    readFile(new URL("../supabase/whykaigi_attendee_auth.sql", import.meta.url), "utf8"),
     readFile(new URL("../lib/access-auth.ts", import.meta.url), "utf8"),
   ]);
   assert.match(roomRoute, /authorizeViewer/);
-  assert.match(roomRoute, /verification_required/);
-  assert.match(requestRoute, /OTP_RESEND_SECONDS/);
-  assert.match(requestRoute, /email_delivery_unavailable/);
-  assert.match(verifyRoute, /OTP_MAX_ATTEMPTS|attempts_remaining/);
-  assert.match(verifyRoute, /Set-Cookie/);
+  assert.match(roomRoute, /google_identity_required/);
+  assert.match(supabaseRoute, /verifySupabaseGoogleIdentity/);
+  assert.match(supabaseRoute, /recordSupabaseRoomAccess/);
+  assert.match(supabaseRoute, /Set-Cookie/);
+  assert.match(supabaseAuth, /\/auth\/v1\/user/);
+  assert.match(supabaseAuth, /email_confirmed_at/);
+  assert.match(supabaseAuth, /identityUsesGoogle/);
+  assert.match(supabaseAuth, /MLT_ACCESS_SIGNING_SECRET/);
+  assert.match(migration, /enable row level security/);
+  assert.match(migration, /auth\.uid\(\)/);
+  assert.match(migration, /revoke all.*from anon/is);
+  assert.match(migration, /interval '30 days'/);
   assert.match(accessAuth, /ACCESS_LOG_RETENTION_DAYS = 30/);
-  assert.match(accessAuth, /https:\/\/api\.resend\.com\/emails/);
-  assert.doesNotMatch(requestRoute + verifyRoute + accessAuth, /console\.log\(.*code|return.*verification.*code/i);
+  assert.doesNotMatch(roomRoute + supabaseRoute + supabaseAuth, /RESEND_API_KEY|one-time-code/i);
 });
 
 test("removes the disposable starter and keeps relay boundaries explicit", async () => {

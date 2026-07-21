@@ -1,6 +1,6 @@
 # Local viewer-site development only. Production values belong in Sites runtime environment variables.
 # Keep every real secret out of Git.
 MLT_RELAY_CREATE_SECRET=replace_with_a_random_32_byte_secret
-MLT_OTP_SIGNING_SECRET=replace_with_a_different_random_32_byte_secret
-MLT_OTP_FROM_EMAIL=WhyKaigi <invite@your-verified-domain.example>
-RESEND_API_KEY=replace_with_a_sending_only_resend_key
+MLT_ACCESS_SIGNING_SECRET=replace_with_a_different_random_32_byte_secret
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_me

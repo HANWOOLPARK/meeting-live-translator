@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SharedRadarItem, SharedSegment } from "../../../lib/relay";
+import { getViewerSupabaseClient } from "../../../lib/supabase-browser";
 
 type ViewerState = {
   capture_status: string;
@@ -29,7 +30,7 @@ type RoomPayload = {
 type Language = "ko" | "en";
 type ViewMode = "both" | "translation";
 type RadarTab = "core" | "decision" | "action" | "issues";
-type AccessStage = "checking" | "email" | "code" | "authenticated";
+type AccessStage = "checking" | "signin" | "authenticated";
 
 const copy = {
   ko: {
@@ -65,25 +66,14 @@ const copy = {
     presenterOffline: "진행자 연결 확인 중",
     radarDelayed: "Radar 분석이 지연 중이지만 자막은 계속 표시됩니다.",
     expired: "진행자가 공유를 종료했거나 보관 기간이 만료되었습니다.",
-    accessTitle: "이메일 인증 후 입장",
-    accessLead: "초대 링크를 받은 본인의 이메일로 6자리 인증번호를 받아 입력하세요.",
-    emailLabel: "이메일",
-    emailPlaceholder: "name@example.com",
-    sendCode: "인증번호 받기",
-    codeLabel: "6자리 인증번호",
-    codePlaceholder: "000000",
-    verifyCode: "인증하고 입장",
-    resendCode: "인증번호 다시 받기",
-    changeEmail: "이메일 변경",
-    sending: "전송 중…",
-    verifying: "확인 중…",
-    codeSent: "인증번호를 이메일로 보냈습니다. 10분 안에 입력하세요.",
-    invalidEmail: "올바른 이메일 주소를 입력하세요.",
-    invalidCode: "인증번호가 올바르지 않거나 만료되었습니다.",
-    rateLimited: "요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
-    deliveryUnavailable: "인증 메일 서비스가 아직 설정되지 않았습니다. 진행자에게 알려주세요.",
-    accessError: "인증을 처리하지 못했습니다. 잠시 후 다시 시도하세요.",
-    accessPrivacy: "이메일과 링크 접속 기록은 보안 감사 목적으로 30일 보관 후 자동 삭제됩니다. 인증 메일 전송을 위해 이메일 주소가 Resend로 전달됩니다.",
+    accessTitle: "Google 계정 확인 후 입장",
+    accessLead: "본인의 Google 계정으로 로그인하면 확인된 이메일과 입장 기록이 진행자에게 표시됩니다.",
+    signInGoogle: "Google로 계속하기",
+    authenticating: "계정 확인 중…",
+    rateLimited: "로그인 요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
+    providerUnavailable: "Google 로그인이 아직 설정되지 않았습니다. 진행자에게 알려주세요.",
+    accessError: "Google 계정을 확인하지 못했습니다. 잠시 후 다시 시도하세요.",
+    accessPrivacy: "Google과 Supabase는 계정 소유 여부를 확인하는 데 사용됩니다. 확인된 이메일과 링크 입장 기록은 보안 감사 목적으로 30일 보관 후 자동 삭제됩니다.",
     contentPrivacy: "회의 중계 텍스트는 공유 종료 시 즉시 삭제됩니다.",
     signOut: "나가기",
   },
@@ -120,25 +110,14 @@ const copy = {
     presenterOffline: "Checking presenter connection",
     radarDelayed: "Radar analysis is delayed. Captions continue.",
     expired: "The host ended sharing or the retention period expired.",
-    accessTitle: "Verify your email to enter",
-    accessLead: "Receive a six-digit code at your own email address before opening this invite.",
-    emailLabel: "Email",
-    emailPlaceholder: "name@example.com",
-    sendCode: "Send verification code",
-    codeLabel: "Six-digit verification code",
-    codePlaceholder: "000000",
-    verifyCode: "Verify and enter",
-    resendCode: "Send a new code",
-    changeEmail: "Use another email",
-    sending: "Sending…",
-    verifying: "Verifying…",
-    codeSent: "A verification code was sent. Enter it within 10 minutes.",
-    invalidEmail: "Enter a valid email address.",
-    invalidCode: "The verification code is invalid or expired.",
-    rateLimited: "Too many requests. Please wait and try again.",
-    deliveryUnavailable: "Email verification is not configured yet. Contact the host.",
-    accessError: "Verification could not be completed. Try again shortly.",
-    accessPrivacy: "Your email and invite access records are retained for security auditing and automatically deleted after 30 days. Your email is sent to Resend to deliver the code.",
+    accessTitle: "Continue with a verified Google account",
+    accessLead: "Sign in with your own Google account so the host can see the verified email that joined this room.",
+    signInGoogle: "Continue with Google",
+    authenticating: "Checking account…",
+    rateLimited: "Too many sign-in requests. Please wait and try again.",
+    providerUnavailable: "Google sign-in is not configured yet. Contact the host.",
+    accessError: "Your Google account could not be verified. Try again shortly.",
+    accessPrivacy: "Google and Supabase verify account ownership. Your verified email and invite access record are retained for security auditing and automatically deleted after 30 days.",
     contentPrivacy: "Relayed meeting text is deleted when sharing ends.",
     signOut: "Sign out",
   },
@@ -175,12 +154,9 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
   const [evidenceNotice, setEvidenceNotice] = useState("");
   const [accessStage, setAccessStage] = useState<AccessStage>("checking");
   const [authEmail, setAuthEmail] = useState("");
-  const [authCode, setAuthCode] = useState("");
-  const [challengeId, setChallengeId] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
-  const [authMessage, setAuthMessage] = useState("");
   const [authError, setAuthError] = useState("");
-  const [emailDeliveryConfigured, setEmailDeliveryConfigured] = useState(true);
+  const [supabaseConfigured, setSupabaseConfigured] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const radarScrollRef = useRef<HTMLDivElement>(null);
   const radarPinnedRef = useRef(true);
@@ -221,20 +197,58 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
         if (!response.ok) throw new Error("access_status_failed");
         const status = await response.json() as {
           authenticated?: boolean;
-          email_delivery_configured?: boolean;
+          email?: string | null;
+          supabase_auth_configured?: boolean;
         };
-        setEmailDeliveryConfigured(status.email_delivery_configured !== false);
-        setAccessStage(status.authenticated ? "authenticated" : "email");
+        setSupabaseConfigured(status.supabase_auth_configured !== false);
+        if (status.authenticated) {
+          setAuthEmail(status.email ?? "");
+          setAccessStage("authenticated");
+          return;
+        }
+        if (status.supabase_auth_configured === false) {
+          setAccessStage("signin");
+          setAuthError(labels.providerUnavailable);
+          return;
+        }
+
+        const supabase = await getViewerSupabaseClient();
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const accessToken = data.session?.access_token;
+        if (!accessToken) {
+          setAccessStage("signin");
+          return;
+        }
+        const exchange = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/supabase`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        const result = await exchange.json().catch(() => ({})) as {
+          code?: string;
+          email?: string;
+        };
+        if (exchange.status === 410) {
+          setConnection("ended");
+          return;
+        }
+        if (!exchange.ok) throw new Error(result.code || "supabase_auth_failed");
+        setAuthEmail(result.email ?? data.session?.user.email ?? "");
+        setAccessStage("authenticated");
+        setConnection("connecting");
       } catch {
         if (!cancelled) {
-          setAccessStage("email");
+          setAccessStage("signin");
           setAuthError(labels.accessError);
         }
       }
     };
     void checkAccess();
     return () => { cancelled = true; };
-  }, [roomId, labels.accessError]);
+  }, [roomId, labels.accessError, labels.providerUnavailable]);
 
   useEffect(() => {
     if (accessStage !== "authenticated") return;
@@ -263,7 +277,7 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
         if (response.status === 401) {
           terminal = true;
           setPayload(null);
-          setAccessStage("email");
+          setAccessStage("signin");
           setAuthError("");
           return;
         }
@@ -287,68 +301,26 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
   }, [roomId, accessStage]);
 
   const authFailureMessage = (code: string) => {
-    if (code === "invalid_email") return labels.invalidEmail;
-    if (code === "invalid_or_expired_code") return labels.invalidCode;
-    if (code === "verification_code_rate_limited") return labels.rateLimited;
-    if (["email_delivery_unavailable", "email_delivery_failed"].includes(code)) return labels.deliveryUnavailable;
+    if (code === "authentication_rate_limited") return labels.rateLimited;
+    if (code === "supabase_auth_unavailable") return labels.providerUnavailable;
     return labels.accessError;
   };
 
-  const requestVerificationCode = async (event?: React.FormEvent) => {
-    event?.preventDefault();
+  const signInWithGoogle = async () => {
     if (authBusy) return;
     setAuthBusy(true);
     setAuthError("");
-    setAuthMessage("");
     try {
-      const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ email: authEmail }),
+      const supabase = await getViewerSupabaseClient();
+      const redirectTo = `${window.location.origin}/room/${encodeURIComponent(roomId)}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
       });
-      const result = await response.json().catch(() => ({})) as { code?: string; challenge_id?: string };
-      if (response.status === 410) {
-        setConnection("ended");
-        return;
-      }
-      if (!response.ok || !result.challenge_id) throw new Error(result.code || "verification_request_failed");
-      setChallengeId(result.challenge_id);
-      setAuthCode("");
-      setAccessStage("code");
-      setAuthMessage(labels.codeSent);
+      if (error) throw error;
     } catch (error) {
       const code = error instanceof Error ? error.message : "";
       setAuthError(authFailureMessage(code));
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
-  const verifyAccessCode = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (authBusy || !challengeId) return;
-    setAuthBusy(true);
-    setAuthError("");
-    try {
-      const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/auth/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ challenge_id: challengeId, code: authCode }),
-      });
-      const result = await response.json().catch(() => ({})) as { code?: string };
-      if (response.status === 410) {
-        setConnection("ended");
-        return;
-      }
-      if (!response.ok) throw new Error(result.code || "verification_failed");
-      setAuthMessage("");
-      setAuthCode("");
-      setAccessStage("authenticated");
-      setConnection("connecting");
-    } catch (error) {
-      const code = error instanceof Error ? error.message : "";
-      setAuthError(authFailureMessage(code));
-    } finally {
       setAuthBusy(false);
     }
   };
@@ -358,10 +330,11 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
       method: "POST",
       headers: { Accept: "application/json" },
     }).catch(() => undefined);
+    const supabase = await getViewerSupabaseClient().catch(() => null);
+    await supabase?.auth.signOut({ scope: "local" }).catch(() => undefined);
     setPayload(null);
-    setChallengeId("");
-    setAuthCode("");
-    setAccessStage("email");
+    setAuthEmail("");
+    setAccessStage("signin");
     setConnection("connecting");
   };
 
@@ -499,54 +472,25 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
             </div>
           </header>
           <div className="access-lock" aria-hidden="true">✦</div>
-          <p className="viewer-eyebrow">EMAIL · ONE-TIME CODE</p>
+          <p className="viewer-eyebrow">GOOGLE · VERIFIED EMAIL</p>
           <h2>{labels.accessTitle}</h2>
           <p className="access-lead">{labels.accessLead}</p>
           {accessStage === "checking" ? (
             <div className="access-checking"><i />{language === "ko" ? "초대 링크 확인 중…" : "Checking invite…"}</div>
-          ) : accessStage === "email" ? (
-            <form className="access-form" onSubmit={requestVerificationCode}>
-              <label htmlFor="viewer-email">{labels.emailLabel}</label>
-              <input
-                id="viewer-email"
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                required
-                maxLength={254}
-                value={authEmail}
-                placeholder={labels.emailPlaceholder}
-                onChange={(event) => setAuthEmail(event.target.value)}
-              />
-              <button type="submit" disabled={authBusy || !emailDeliveryConfigured}>
-                {authBusy ? labels.sending : labels.sendCode}
-              </button>
-            </form>
           ) : (
-            <form className="access-form" onSubmit={verifyAccessCode}>
-              <div className="access-email-row"><span>{authEmail}</span><button type="button" onClick={() => { setAccessStage("email"); setAuthError(""); setAuthMessage(""); }}>{labels.changeEmail}</button></div>
-              <label htmlFor="viewer-code">{labels.codeLabel}</label>
-              <input
-                id="viewer-code"
-                className="access-code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                required
-                value={authCode}
-                placeholder={labels.codePlaceholder}
-                onChange={(event) => setAuthCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-              />
-              <button type="submit" disabled={authBusy || authCode.length !== 6}>
-                {authBusy ? labels.verifying : labels.verifyCode}
+            <div className="access-form">
+              <button
+                className="access-google"
+                type="button"
+                disabled={authBusy || !supabaseConfigured}
+                onClick={() => void signInWithGoogle()}
+              >
+                <span aria-hidden="true">G</span>
+                {authBusy ? labels.authenticating : labels.signInGoogle}
               </button>
-              <button className="access-secondary" type="button" disabled={authBusy} onClick={() => void requestVerificationCode()}>{labels.resendCode}</button>
-            </form>
+            </div>
           )}
-          {!emailDeliveryConfigured && <p className="access-error" role="alert">{labels.deliveryUnavailable}</p>}
-          {authMessage && <p className="access-message" role="status">{authMessage}</p>}
+          {!supabaseConfigured && <p className="access-error" role="alert">{labels.providerUnavailable}</p>}
           {authError && <p className="access-error" role="alert">{authError}</p>}
           <aside className="access-privacy"><strong>{labels.contentPrivacy}</strong><span>{labels.accessPrivacy}</span></aside>
         </section>
@@ -566,6 +510,7 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
             <button className={language === "ko" ? "active" : ""} onClick={() => chooseLanguage("ko")}>한국어</button>
             <button className={language === "en" ? "active" : ""} onClick={() => chooseLanguage("en")}>English</button>
           </div>
+          {authEmail && <span className="viewer-identity" title={authEmail}>{authEmail}</span>}
           <button className="viewer-sign-out" type="button" onClick={() => void signOut()}>{labels.signOut}</button>
           <span className={`connection-pill ${connection}`}><i />{connectionLabel}</span>
         </div>
