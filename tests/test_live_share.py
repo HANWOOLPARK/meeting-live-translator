@@ -51,7 +51,7 @@ def test_relay_requests_use_an_explicit_product_user_agent(monkeypatch) -> None:
 
     assert result == {}
     assert captured == {
-        "user_agent": "VerbaRadar/0.6",
+        "user_agent": "WhyKaigi/0.7",
         "timeout": 7,
     }
 

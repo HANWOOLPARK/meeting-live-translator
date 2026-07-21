@@ -1,1 +1,1 @@
-"""Backend package for VerbaRadar."""
+"""Backend package for WhyKaigi."""

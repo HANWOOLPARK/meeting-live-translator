@@ -5001,7 +5001,7 @@
     }
     captionWindow = window.open(
       "/captions",
-      "verbaradar-captions",
+      "whykaigi-captions",
       "popup=yes,width=920,height=620,resizable=yes,scrollbars=no",
     );
     if (!captionWindow) {
@@ -5031,7 +5031,7 @@
     const top = (Number(window.screen.availTop) || 0) + availableHeight - height - 12;
     mediaCaptionWindow = window.open(
       "/captions?layout=media",
-      "verbaradar-media-captions",
+      "whykaigi-media-captions",
       `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`,
     );
     if (!mediaCaptionWindow) {
@@ -5055,7 +5055,7 @@
     }
     decisionRadarWindow = window.open(
       "/decision-radar",
-      "verbaradar-decision-radar",
+      "whykaigi-decision-radar",
       "popup=yes,width=560,height=760,resizable=yes,scrollbars=no",
     );
     if (!decisionRadarWindow) {

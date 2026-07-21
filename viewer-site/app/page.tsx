@@ -7,8 +7,8 @@ export default function Home() {
       <div className="landing-orb landing-orb-two" />
       <section className="landing-card">
         <div className="brand-lockup">
-          <span className="brand-signal verbaradar-mark" aria-hidden="true" />
-          <span>VERBARADAR</span>
+          <span className="brand-signal whykaigi-mark" aria-hidden="true" />
+          <span>WHYKAIGI</span>
         </div>
         <p className="landing-kicker">LIVE TRANSLATION · EVIDENCE-LINKED DECISIONS</p>
         <h1>Understand the meeting.<br /><em>Verify every decision.</em></h1>

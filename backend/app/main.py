@@ -310,7 +310,7 @@ def create_app(
             await resolved_services.websocket_manager.close_all()
 
     app = FastAPI(
-        title="VerbaRadar",
+        title="WhyKaigi",
         version=APP_VERSION,
         description=(
             "Phase 3 near-real-time transcription, optional Korean translation, "

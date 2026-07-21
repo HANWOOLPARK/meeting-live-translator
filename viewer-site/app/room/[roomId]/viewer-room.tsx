@@ -476,7 +476,7 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     return (
       <main className="viewer-ended" data-testid="room-ended">
         <div className="ended-mark" aria-hidden="true">×</div>
-        <p className="viewer-eyebrow">VERBARADAR</p>
+        <p className="viewer-eyebrow">WHYKAIGI</p>
         <h1>{connectionLabel}</h1>
         <p>{labels.expired}</p>
         <div className="privacy-chip">{labels.retention}</div>
@@ -490,8 +490,8 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
         <section className="access-card" aria-busy={authBusy}>
           <header className="access-header">
             <div className="viewer-brand">
-              <span className="brand-signal verbaradar-mark" aria-hidden="true" />
-              <div><p>VERBARADAR</p><h1>Secure shared meeting</h1></div>
+              <span className="brand-signal whykaigi-mark" aria-hidden="true" />
+              <div><p>WHYKAIGI</p><h1>Secure shared meeting</h1></div>
             </div>
             <div className="language-toggle" aria-label="Language">
               <button type="button" className={language === "ko" ? "active" : ""} onClick={() => chooseLanguage("ko")}>한국어</button>
@@ -558,8 +558,8 @@ export function ViewerRoom({ roomId }: { roomId: string }) {
     <main className="viewer-shell" data-testid="viewer-room">
       <header className="viewer-header">
         <div className="viewer-brand">
-          <span className="brand-signal verbaradar-mark" aria-hidden="true" />
-          <div><p>VERBARADAR</p><h1>Shared meeting view</h1></div>
+          <span className="brand-signal whykaigi-mark" aria-hidden="true" />
+          <div><p>WHYKAIGI</p><h1>Shared meeting view</h1></div>
         </div>
         <div className="viewer-header-actions">
           <div className="language-toggle" aria-label="Language">

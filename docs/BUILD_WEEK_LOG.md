@@ -1,6 +1,6 @@
 # OpenAI Build Week Development Log
 
-This is the canonical English submission record for Meeting Live Translator. The
+This is the canonical English submission record for WhyKaigi. The
 original Korean log is preserved verbatim in
 [`BUILD_WEEK_LOG_KO.md`](BUILD_WEEK_LOG_KO.md) (archive SHA-256:
 `95204397B48D7C36F56E79C43473038AFFDB4E763462DF42F4A295DF22BD6561`).
@@ -1489,3 +1489,116 @@ normalization → consistent translation → captured action → evidence naviga
   the three skips remain explicitly gated live-provider tests. Viewer production
   build and ESLint passed, all 12 Viewer tests passed, 33 focused renderer tests
   passed, and JavaScript syntax checks passed.
+
+## 45. User-authored WhyKaigi identity and release hardening - 2026-07-21 KST
+
+- **User decision and authorship boundary:** The user personally selected
+  `WhyKaigi` as the final product name and supplied the existing black `Why?`
+  wordmark already used across their own applications. Codex did not invent the
+  name or visual concept; it cleaned, upscaled, and adapted that supplied mark
+  into the required runtime and submission formats.
+- **Product-facing rebrand:** Updated the FastAPI title, Electron application and
+  window identity, main UI, detached caption and Radar windows, public Viewer,
+  OTP email copy, exports, package metadata, setup/start/stop messages, Lite
+  distribution name, documentation, and public replay attribution to
+  `WhyKaigi`. The same 512x512 PNG is used by all runtime surfaces, with a
+  multi-resolution Windows ICO plus 3:2 Open Graph and Devpost assets.
+- **Compatibility boundary:** Kept `MLT_*` environment variables, `mlt-*`
+  cookies/storage/broadcast keys, API and relay schemas, D1 bindings, session
+  formats, the local working-directory name, and the existing Sites project ID.
+  Historical specifications and previous VerbaRadar log entries remain intact.
+  No existing session, JSONL, model, credential, or access-log data was changed.
+- **Regression prevention:** Added checks for the exact WhyKaigi brand markers,
+  identical 512x512 runtime PNGs, removal of every legacy asset, absence of old
+  display names in runtime source, cache-safe renderer assets, and absence of
+  local Windows user paths from Viewer production bundles. Removing `next/font`
+  eliminated a build artifact that had embedded a developer-local absolute font
+  path in the previously published HTML.
+- **Actual verification:** Full Python regression passed `369 passed, 3 skipped`;
+  skips are the existing explicitly gated live-provider tests. Viewer ESLint,
+  Vinext production build, and all 13 Node tests passed. JavaScript syntax and
+  PowerShell parser checks passed. A real Electron restart reached healthy
+  FastAPI, translation Worker, app-ready, populated loopback device, and connected
+  WebSocket states while visibly rendering the new `Why?` mark and WhyKaigi
+  title.
+- **Lite release evidence:** Built `whykaigi-lite-20260721.zip` with 115 entries,
+  no tracked secrets, sessions, models, virtual environments, runtime PID files,
+  or legacy brand assets. SHA-256 is
+  `CD2AE6361BFCF0A828ED12E65DABC7B63A0B30ECE014FE31D1854FDD316B86EC`.
+- **GitHub release:** Renamed the existing public repository to
+  `HANWOOLPARK/whykaigi`, preserving its history and permissions. Updated its
+  description and demo homepage. The public `v1.0.0-build-week` release is now
+  titled `WhyKaigi - Build Week Demo` and contains only the verified
+  `whykaigi-lite-20260721.zip`; GitHub's digest and a fresh unauthenticated
+  download both matched the local SHA-256 above.
+- **Sites deployment:** Fast-forwarded the existing Sites source repository with
+  the exact verified Viewer tree and published version 10 using environment
+  revision 7. The site title and OTP sender display are `WhyKaigi`; the verified
+  sender address, Resend key, relay secret, OTP secret, D1 database, access logs,
+  rooms, and public URL were preserved. Public landing and `/demo` loaded the new
+  name and icon with no console warnings or local-path leakage.
+- **Public media check:** The deployed demo MP3 returned HTTP 200 as `audio/mpeg`,
+  exactly 919,721 bytes, and matched the verified local SHA-256
+  `96870E48C9AEDF776AC912EED27E37DED2A0D8E7F6B44E6F9A0C4D41740F089F`.
+  The Codex in-app browser exposed the media as fully buffered but refused audio
+  output under its own playback policy, so browser audio playback itself is not
+  claimed; the public bytes plus the 13 passing Replay/evidence tests provide the
+  deployment evidence.
+- **Devpost update:** Changed the published project display name and all six story
+  references to `WhyKaigi`, replaced its project links with the renamed GitHub
+  repository and public Replay, and uploaded the user-authored `Why?` thumbnail.
+  The demo video remains unset and the Build Week entry remains unsubmitted for
+  the user's final recording. Devpost's existing `/software/verbaradar` slug and
+  the Sites technical hostname remain unchanged compatibility URLs; every visible
+  product title and image uses WhyKaigi.
+
+## 46. Human-reviewed origin story - 2026-07-21 KST
+
+- **User-authored substance:** The user described in Korean that everyday
+  Japanese was sufficient for daily life but not for business meetings. They
+  could recognize words and pieces of context, yet could not understand the
+  meeting's overall purpose, current progress, or decisions until running an AI
+  summary after it ended. WhyKaigi began as a way to make that understanding
+  available during the meeting itself; meetings that had felt long and
+  frustrating became something the user now looks forward to because their own
+  application genuinely helps them follow the conversation.
+- **Name and longer vision:** The user connected WhyKaigi to their existing Why
+  BJT business-Japanese study app. `WHY` is their abbreviation for
+  `What Holds You Back?`, chosen after arriving in Japan and struggling to adapt
+  to the culture. Their longer-term goal is a Why series where people from other
+  countries living in Japan can find language-learning, meeting, and everyday
+  tools in one place.
+- **AI boundary and review:** Codex translated and structured only those supplied
+  facts into the English README and Devpost `Inspiration` section. The user read
+  the complete English draft, confirmed that it accurately represented their
+  experience, and explicitly approved publication before either surface was
+  updated. All other Devpost sections remained unchanged for later review.
+- **Second reviewed pass:** The user then described that Codex removed traditional
+  implementation blockers, while their own role was repeated real-use testing,
+  identifying mismatches, and setting concrete acceptance criteria. They also
+  identified paid-API uncertainty as the only material hesitation and
+  language-specific finalization timing, translation quality, speed, and
+  selective local Whisper verification as the product work they were most proud
+  of. Codex structured those facts into the README collaboration statement and
+  Devpost `Challenges` and `Accomplishments` sections; the user reviewed and
+  explicitly approved the complete drafts before publication.
+- **Third reviewed pass:** The user described how their experience changed from
+  GPT-5.5 to GPT-5.6, how ChatGPT brainstorming and Codex implementation changed
+  the boundary of ideas they consider achievable, and why product judgment,
+  testing, and reaching users now matter more to them than an initial lack of
+  development expertise. They also set the actual next sequence: test WhyKaigi
+  with coworkers during Build Week, improve translation quality and latency,
+  validate a paid product, and then grow the Why series from Korean residents in
+  Japan toward a broader platform. Codex organized and translated only those
+  supplied views; the user reviewed and explicitly approved the full English
+  `What I learned` and `What's next` drafts before Devpost version 7 was saved.
+- **Fourth reviewed pass:** The user defined WhyKaigi in their own words as a
+  tool for real-time translation that also identifies the meeting's focus and
+  action items. They chose fast, natural translation as the first impression,
+  explaining that many tools call themselves real-time while producing awkward
+  or delayed results. They also identified inspectable evidence as the product's
+  second distinction: decisions and actions can be checked against both the
+  translation and original source instead of appearing as unexplained AI
+  suggestions. Codex translated and structured those supplied priorities into
+  the README opening and Devpost tagline; the user reviewed and explicitly
+  approved the exact English draft before publication.

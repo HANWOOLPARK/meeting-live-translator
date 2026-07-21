@@ -29,7 +29,7 @@ if not defined PYTHON311 goto :python_error
 if errorlevel 1 goto :python_error
 
 echo ============================================================
-echo VerbaRadar - optional local translation setup
+echo WhyKaigi - optional local translation setup
 echo ============================================================
 echo The runtime is installed only in .venv-translation.
 echo If the model is absent, the pinned M2M100 source is downloaded

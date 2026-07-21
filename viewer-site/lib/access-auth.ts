@@ -124,9 +124,9 @@ export async function sendVerificationEmail(email: string, code: string, challen
     body: JSON.stringify({
       from,
       to: [email],
-      subject: "VerbaRadar verification code",
+      subject: "WhyKaigi verification code",
       text: `Your verification code is ${code}. It expires in 10 minutes. If you did not request this code, ignore this email.`,
-      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#12202f"><h2 style="margin:0 0 16px">VerbaRadar</h2><p>Enter this code to open the shared meeting view.</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:20px 0">${code}</p><p style="color:#5d6978">This code expires in 10 minutes. If you did not request it, ignore this email.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#12202f"><h2 style="margin:0 0 16px">WhyKaigi</h2><p>Enter this code to open the shared meeting view.</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:20px 0">${code}</p><p style="color:#5d6978">This code expires in 10 minutes. If you did not request it, ignore this email.</p></div>`,
       tags: [{ name: "category", value: "viewer_otp" }],
     }),
   });

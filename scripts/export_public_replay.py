@@ -14,7 +14,7 @@ PIPELINE = [
     {"stage": "STT", "provider": "Deepgram", "model": "Nova-3"},
     {
         "stage": "Context",
-        "provider": "VerbaRadar",
+        "provider": "WhyKaigi",
         "model": "Approved terms and people",
     },
     {

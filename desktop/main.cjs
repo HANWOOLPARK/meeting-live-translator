@@ -9,13 +9,13 @@ const appUrl = new URL(process.env.MLT_APP_URL || "http://127.0.0.1:8765/");
 const allowedOrigin = appUrl.origin;
 const readyFile = process.env.MLT_DESKTOP_READY_FILE || "";
 const preloadPath = path.join(__dirname, "preload.cjs");
-const iconPath = path.join(__dirname, "assets", "verbaradar.ico");
+const iconPath = path.join(__dirname, "assets", "whykaigi.ico");
 const overlayWindows = new Map();
 let mainWindow = null;
 let mediaWidthPercent = 94;
 
-app.setName("VerbaRadar");
-app.setAppUserModelId("com.verbaradar.desktop");
+app.setName("WhyKaigi");
+app.setAppUserModelId("com.whykaigi.desktop");
 app.setPath("userData", path.join(projectRoot, ".run", "electron-user-data"));
 
 const hasLock = app.requestSingleInstanceLock();
@@ -69,7 +69,7 @@ function createMainWindow() {
     autoHideMenuBar: true,
     backgroundColor: "#080c14",
     icon: iconPath,
-    title: "VerbaRadar",
+    title: "WhyKaigi",
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -150,9 +150,9 @@ function createOverlay(kind) {
     skipTaskbar: false,
     icon: iconPath,
     title: {
-      caption: "VerbaRadar · Captions",
-      media: "VerbaRadar · Media Captions",
-      radar: "VerbaRadar · Decision Radar",
+      caption: "WhyKaigi · Captions",
+      media: "WhyKaigi · Media Captions",
+      radar: "WhyKaigi · Decision Radar",
     }[kind],
     webPreferences: {
       preload: preloadPath,

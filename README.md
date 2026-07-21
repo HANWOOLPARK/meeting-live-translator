@@ -1,11 +1,23 @@
-# VerbaRadar
+# WhyKaigi
 
-**Live translation with evidence-linked decisions.**
+**Context-aware, near-real-time meeting translation with evidence-linked decisions and action items.**
 
-VerbaRadar is a Windows-first meeting intelligence companion for people who need to follow a conversation in another language and verify what the meeting actually decided. It preserves the finalized source transcript, applies only user-approved terminology corrections, translates the corrected text, and turns explicit decisions, actions, and unresolved questions into a live Decision Radar. Every Radar item links back to the source segments that support it.
+WhyKaigi is a near-real-time meeting translation tool built around one priority: translation should be fast without losing the context that makes it accurate. It uses language-aware speech boundaries and meeting context to produce more natural captions, then translates them as the conversation continues.
+
+Based on that transcript, WhyKaigi identifies the meeting's key points, decisions, and action items. Unlike meeting assistants that present suggestions without showing how they were inferred, every Decision Radar item links back to the translated caption and original source segment that supports it. The user can inspect the evidence and decide whether the result is correct.
 
 > Build Week submission track: **Work & Productivity**  
 > Public, keyless Replay: [open the verified Korean → English demo](https://meeting-live-translator-viewer.bakbaul.chatgpt.site/demo).
+
+## Why I built it
+
+I live in Japan, and my Japanese is good enough for everyday life, but not yet strong enough for business meetings. I could recognize individual words and understand parts of the context, but I often could not tell the overall purpose of the meeting, how far the discussion had progressed, or what had actually been decided. I usually understood the full picture only after the meeting ended and I used AI to summarize it.
+
+I built WhyKaigi to understand the conversation while the meeting is still happening. It shows me what people are discussing and surfaces decisions in real time. Meetings used to feel long and frustrating. Now I look forward to them, because an application I built is genuinely helping me understand what is happening.
+
+WhyKaigi is part of my existing Why series. I first built [Why BJT](https://why-bjt-study.vercel.app/), a web application for studying business Japanese for the BJT exam. “WHY” stands for “What Holds You Back?” I chose that phrase after coming to Japan, when I struggled to adapt to the culture and often felt carried along by circumstances.
+
+In the future, I want to grow the Why series into one place where people from other countries living in Japan can find tools for Japanese study, meetings, and other parts of life in Japan.
 
 ## Why it is different
 
@@ -137,7 +149,9 @@ Live external tests are opt-in and guarded by explicit environment flags and con
 
 ## Built with Codex and GPT-5.6
 
-Codex was used as the implementation and verification partner throughout Build Week: translating product observations into testable contracts, tracing latency across STT/translation/UI stages, hardening Deepgram sentence assembly and reconnect behavior, building the Context Engine and evidence validator, reproducing Provider failures, checking process ownership and data invariants, and creating the public Replay path.
+I did not begin this project with a fixed technical implementation plan. I repeatedly used the application, found behavior that did not match my intention, explained the problem to Codex with concrete examples, and defined what an acceptable result should look like. Codex turned those observations into implementation changes, tests, diagnostics, and regression checks.
+
+For me, developing with Codex has become a hobby that fits naturally into everyday life. Codex handled the implementation problems, while I remained responsible for deciding what the product should do, testing whether it was genuinely useful in a real meeting, and rejecting results that did not meet the level I expected.
 
 GPT-5.6 powers the final Decision Radar demo. The product does not present model output as ground truth: items are suggestions, must cite existing finalized source segments, and remain reviewable and editable by the user.
 

@@ -11,6 +11,16 @@ import {
 const templateRoot = new URL("../", import.meta.url);
 const previewRoot = new URL("../app/_sites-preview/", import.meta.url);
 
+async function collectFiles(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const target = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directory);
+    if (entry.isDirectory()) files.push(...await collectFiles(target));
+    else files.push(target);
+  }
+  return files;
+}
+
 test("build output and public verified replay landing are present", async () => {
   const [page, layout] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -21,8 +31,17 @@ test("build output and public verified replay landing are present", async () => 
   assert.match(page, /href="\/demo"/);
   assert.match(page, /Decision Radar/);
   assert.match(page, /data-testid="viewer-home"/);
-  assert.match(layout, /VerbaRadar/);
+  assert.match(layout, /WhyKaigi/);
   assert.doesNotMatch(page + layout, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
+});
+
+test("published bundles contain no local Windows user path", async () => {
+  const distRoot = new URL("../dist/", import.meta.url);
+  const candidates = (await collectFiles(distRoot)).filter((url) => /\.(?:css|html|js|json|txt)$/i.test(url.pathname));
+  for (const candidate of candidates) {
+    const content = await readFile(candidate, "utf8");
+    assert.doesNotMatch(content, /[A-Z]:[\\/]Users[\\/]/i, `local user path leaked in ${candidate.pathname}`);
+  }
 });
 
 test("viewer room is read-only and keeps the privacy notice visible", async () => {
@@ -78,7 +97,7 @@ test("removes the disposable starter and keeps relay boundaries explicit", async
   ]);
 
   assert.match(page, /Live rooms require a host invite link/);
-  assert.match(layout, /VerbaRadar/);
+  assert.match(layout, /WhyKaigi/);
   assert.match(viewer, /450/);
   assert.match(viewer, /evidence_segment_ids/);
   assert.match(relay, /MAX_SEGMENTS = 80/);

@@ -33,7 +33,7 @@ if (Test-Path -LiteralPath $PidFile) {
     $saved = (Get-Content -LiteralPath $PidFile -Raw -ErrorAction SilentlyContinue).Trim()
     $savedId = 0
     if ([int]::TryParse($saved, [ref]$savedId) -and $null -ne (Get-OwnedDesktopProcess -ProcessId $savedId)) {
-        Write-Output "VerbaRadar desktop is already running. PID: $savedId"
+        Write-Output "WhyKaigi desktop is already running. PID: $savedId"
         exit 0
     }
     Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
@@ -87,4 +87,4 @@ if (-not $ready) {
 $temporary = $PidFile + ".tmp"
 [IO.File]::WriteAllText($temporary, [string]$process.Id, [Text.Encoding]::ASCII)
 Move-Item -LiteralPath $temporary -Destination $PidFile -Force
-Write-Output "VerbaRadar desktop ready. PID: $($process.Id)"
+Write-Output "WhyKaigi desktop ready. PID: $($process.Id)"

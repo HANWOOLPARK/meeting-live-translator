@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $distDir = Join-Path $root "dist"
 $stageDir = Join-Path $distDir (".lite-stage-" + [Guid]::NewGuid().ToString("N"))
-$packageName = "verbaradar-lite-$Version"
+$packageName = "whykaigi-lite-$Version"
 $packageRoot = Join-Path $stageDir $packageName
 $zipPath = Join-Path $distDir ($packageName + ".zip")
 
@@ -68,8 +68,8 @@ try {
         "desktop\preload.cjs",
         "desktop\package.json",
         "desktop\package-lock.json",
-        "desktop\assets\verbaradar.ico",
-        "desktop\assets\verbaradar-icon.png"
+        "desktop\assets\whykaigi.ico",
+        "desktop\assets\whykaigi-icon.png"
     ) | ForEach-Object { Copy-RelativeFile -RelativePath $_ }
     Copy-RelativeFile -RelativePath "config\translation_glossary.example.json"
     @(

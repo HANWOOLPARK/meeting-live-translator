@@ -6,7 +6,7 @@ set "PROJECT_ROOT=%~dp0"
 if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
 
 echo ============================================================
-echo VerbaRadar - Native transparent overlay setup
+echo WhyKaigi - Native transparent overlay setup
 echo ============================================================
 echo This installs a portable Node runtime and Electron only inside
 echo this project. It does not require administrator rights.
