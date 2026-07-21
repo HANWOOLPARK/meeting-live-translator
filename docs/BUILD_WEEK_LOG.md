@@ -1602,3 +1602,71 @@ normalization → consistent translation → captured action → evidence naviga
   suggestions. Codex translated and structured those supplied priorities into
   the README opening and Devpost tagline; the user reviewed and explicitly
   approved the exact English draft before publication.
+
+## 47. Supabase Google identity for attendee links - 2026-07-22 KST
+
+- **User problem and decision:** Resend test mode could deliver verification codes
+  only to the account owner, while the product requirement was to identify invited
+  participants and retain a per-link access record. The user chose Google identity
+  through Supabase instead of remaining tied to application-owned email OTP.
+- **Authentication implementation:** Replaced the Resend challenge flow with the
+  Supabase browser client and Google OAuth. The browser uses PKCE and accepts only a
+  modern `sb_publishable_` client key; secret or legacy JWT keys fail closed instead
+  of being published. The Viewer sends the resulting access token only to the room
+  exchange endpoint, where the server validates it with Supabase `/auth/v1/user` and
+  never trusts a browser-supplied email string. An already signed-in Supabase user is
+  shown an explicit **Continue to this room** action rather than being enrolled when
+  merely opening a link. A successful exchange creates the existing room-scoped
+  Secure, HttpOnly, SameSite=Strict Viewer session. The retired email OTP request and
+  verify endpoints return 410 unconditionally, so stale clients or leftover Resend
+  variables cannot create an alternate Viewer session.
+- **Audit, retention, and isolation:** Supabase is the identity provider only. The
+  relay is the sole writer of the authoritative room-scoped D1 access audit; the
+  browser never writes a participant profile or access event through PostgREST. The
+  cleanup SQL removes the retired `whykaigi_attendee_profiles` and
+  `whykaigi_room_access_logs` tables without changing the shared project's generic
+  `private` schema. On explicit stop, the relay returns the final host audit snapshot
+  and then purges room challenges, Viewer sessions, access logs, identity data, and
+  relayed text. Idle or maximum-room expiry performs the same purge without returning
+  a host snapshot. The host app may retain the snapshot received on explicit stop
+  locally for up to 30 days. Existing session JSONL remains separate and unchanged.
+- **Deployment:** Product commit `fc3a8b2` was split to the exact Viewer source tree
+  and published as Sites source commit `52482b2091c7dc7fea50da7f29c1203786afb02d`,
+  Viewer version 12, environment revision 8. Resend and OTP variables remain removed;
+  only the Supabase URL, modern publishable key, and a separate access-signing secret
+  are configured. The Viewer room wildcard remains in the Supabase redirect allow
+  list alongside the existing Why BJT and localhost entries. Version 12 contains the
+  PKCE, explicit-consent, relay-purge, Auth-only, and anti-frame hardening above.
+- **Initial production verification:** A disposable production room completed Google
+  sign-in, redirected back to WhyKaigi, displayed the verified identity, survived
+  refresh, and produced `access_granted`, `viewer_entered`, and `signed_out` audit
+  events. The host saw one verified participant. Sign-out returned to the
+  authentication gate; room deletion returned the final audit and subsequent
+  anonymous access returned 410. The disposable auth session and room were removed.
+  The central Supabase audit used by that initial run was then retired in favor of
+  server-owned D1 auditing and stop/end purging.
+- **Version 12 production verification:** The public auth configuration returned only
+  a modern `sb_publishable_` key and no secret field. Retired OTP endpoints returned
+  410 without cookies. `/room/**` returned `frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`, and private/no-store caching. A disposable relay room
+  rejected anonymous reads and tokenless Supabase exchange with 401, returned a
+  clean final audit on host deletion, and returned 410 afterward.
+- **Regression evidence:** Full Python regression passed `369 passed, 3 skipped`.
+  Viewer lint and production build passed, and all 13 Viewer tests passed. Local
+  fail-closed HTTP checks returned 401 for anonymous room/exchange access and 503
+  when required Supabase or signing configuration was absent. Contract coverage now
+  also checks the OTP tombstones, publishable-key guard, PKCE, explicit room consent,
+  server-side Google identity validation, D1-only audit, end-of-room purge, and the
+  absence of Supabase profile/access-log writes.
+- **Data integrity:** The final recheck found the same 137 JSONL files with unchanged
+  paths, lengths, and per-file SHA-256 values. Their captured aggregate baseline is
+  `22EC8102AD0CEA1BBADD229C59CE8FF6B11BEB3F7601ABEE3B8C00BE1F35545F`.
+- **Trade-off:** WhyKaigi currently reuses the existing Why BJT Supabase project.
+  Only the Auth user pool and project-level operational limits are shared; WhyKaigi
+  no longer keeps custom profile or access-log tables there. A dedicated Supabase
+  project is still recommended before an independent commercial launch.
+- **Build Week record:** The latest Devpost technical update replaces obsolete
+  email-OTP claims with the verified Google/Supabase flow and updates the regression
+  total to 369.
+  The user's reviewed origin story, product judgments, demo video, title, tagline,
+  and project links were preserved unchanged; the submitted project remains live.

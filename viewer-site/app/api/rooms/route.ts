@@ -12,7 +12,8 @@ import {
   parseJsonBody,
   randomToken,
 } from "../../../lib/relay";
-import { cleanupAccessRecords, emailDeliveryConfigured } from "../../../lib/access-auth";
+import { cleanupAccessRecords } from "../../../lib/access-auth";
+import { supabaseAuthConfigured } from "../../../lib/supabase-auth";
 
 export async function POST(request: Request) {
   try {
@@ -21,8 +22,8 @@ export async function POST(request: Request) {
     if (!expected || bearerToken(request) !== expected) {
       return jsonResponse({ code: "unauthorized" }, 401);
     }
-    if (!emailDeliveryConfigured()) {
-      return jsonResponse({ code: "viewer_email_auth_not_configured" }, 503);
+    if (!supabaseAuthConfigured()) {
+      return jsonResponse({ code: "viewer_supabase_auth_not_configured" }, 503);
     }
     const payload = await parseJsonBody(request, 10_000);
     if (payload.retention_policy !== "delete_on_stop") {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
         expires_at: new Date(expiresAt).toISOString(),
         retention_policy: "delete_on_stop",
         idle_timeout_seconds: idleSeconds,
-        access_control: "email_otp",
+        access_control: "supabase_google",
         access_log_retention_days: 30,
       },
       201,

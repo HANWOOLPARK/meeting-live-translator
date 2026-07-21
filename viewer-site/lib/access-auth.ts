@@ -3,7 +3,6 @@ import {
   VIEWER_SESSION_COOKIE,
   cookieValue,
   hmacHex,
-  normalizeEmail,
 } from "./access-auth-core";
 import {
   createSecret,
@@ -13,18 +12,12 @@ import {
   type RoomRow,
 } from "./relay";
 
-export const OTP_TTL_SECONDS = 10 * 60;
-export const OTP_RESEND_SECONDS = 45;
-export const OTP_MAX_ATTEMPTS = 5;
-export const OTP_CHALLENGE_RETENTION_SECONDS = 24 * 60 * 60;
 export const VIEWER_SESSION_TOUCH_SECONDS = 20;
 export const ACCESS_LOG_RETENTION_DAYS = 30;
 const ACCESS_LOG_RETENTION_MS = ACCESS_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1_000;
 
 type RuntimeEnv = typeof env & {
-  RESEND_API_KEY?: string;
-  MLT_OTP_FROM_EMAIL?: string;
-  MLT_OTP_SIGNING_SECRET?: string;
+  MLT_ACCESS_SIGNING_SECRET?: string;
 };
 
 export type ViewerSessionRow = {
@@ -55,24 +48,13 @@ function runtime() {
   return env as RuntimeEnv;
 }
 
-export function otpSigningSecret() {
-  return (runtime().MLT_OTP_SIGNING_SECRET ?? createSecret()).trim();
-}
-
-export function emailDeliveryConfigured() {
-  const signingSecret = otpSigningSecret();
-  const from = (runtime().MLT_OTP_FROM_EMAIL ?? "").trim();
-  const bracketed = from.match(/<([^<>]+)>\s*$/)?.[1] ?? from;
-  return Boolean(
-    (runtime().RESEND_API_KEY ?? "").trim()
-      && normalizeEmail(bracketed)
-      && signingSecret.length >= 32,
-  );
+function accessSigningSecret() {
+  return (runtime().MLT_ACCESS_SIGNING_SECRET ?? createSecret()).trim();
 }
 
 export async function requestIpHash(request: Request) {
   const rawIp = (request.headers.get("cf-connecting-ip") ?? "unknown").trim().slice(0, 128);
-  return hmacHex(otpSigningSecret(), `mlt-ip-v1\n${rawIp}`);
+  return hmacHex(accessSigningSecret(), `mlt-ip-v1\n${rawIp}`);
 }
 
 export async function writeAccessLog(
@@ -81,8 +63,16 @@ export async function writeAccessLog(
   eventType: string,
   request: Request,
   detailCode = "",
+  relayRetainUntil?: number,
 ) {
   const now = Date.now();
+  const retainUntil = Math.max(
+    now,
+    Math.min(
+      Number(relayRetainUntil) || now + ACCESS_LOG_RETENTION_MS,
+      now + ACCESS_LOG_RETENTION_MS,
+    ),
+  );
   await database()
     .prepare(
       "INSERT INTO share_access_logs (event_id, room_id, email, event_type, occurred_at, ip_hash, detail_code, retain_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -95,7 +85,7 @@ export async function writeAccessLog(
       now,
       await requestIpHash(request),
       detailCode.slice(0, 80),
-      now + ACCESS_LOG_RETENTION_MS,
+      retainUntil,
     )
     .run();
 }
@@ -108,31 +98,6 @@ export async function cleanupAccessRecords() {
     db.prepare("DELETE FROM share_viewer_sessions WHERE retain_until <= ?").bind(now),
     db.prepare("DELETE FROM share_access_logs WHERE retain_until <= ?").bind(now),
   ]);
-}
-
-export async function sendVerificationEmail(email: string, code: string, challengeId: string) {
-  const apiKey = (runtime().RESEND_API_KEY ?? "").trim();
-  const from = (runtime().MLT_OTP_FROM_EMAIL ?? "").trim();
-  if (!apiKey || !from) throw new Error("email_delivery_unconfigured");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "Idempotency-Key": `mlt-otp-${challengeId}`,
-    },
-    body: JSON.stringify({
-      from,
-      to: [email],
-      subject: "WhyKaigi verification code",
-      text: `Your verification code is ${code}. It expires in 10 minutes. If you did not request this code, ignore this email.`,
-      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#12202f"><h2 style="margin:0 0 16px">WhyKaigi</h2><p>Enter this code to open the shared meeting view.</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:20px 0">${code}</p><p style="color:#5d6978">This code expires in 10 minutes. If you did not request it, ignore this email.</p></div>`,
-      tags: [{ name: "category", value: "viewer_otp" }],
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`email_delivery_failed_${response.status}`);
-  }
 }
 
 export async function authorizeViewer(request: Request, roomId: string) {
@@ -161,7 +126,14 @@ export async function touchViewerSession(
       .bind(now, now, session.session_token_hash)
       .first<{ session_token_hash: string }>();
     if (entered) {
-      await writeAccessLog(session.room_id, session.email, "viewer_entered", request);
+      await writeAccessLog(
+        session.room_id,
+        session.email,
+        "viewer_entered",
+        request,
+        "",
+        session.expires_at,
+      );
       return;
     }
   }
@@ -182,7 +154,14 @@ export async function revokeViewerSession(request: Request, roomId: string) {
     .prepare("UPDATE share_viewer_sessions SET revoked_at = ?, last_seen_at = ? WHERE session_token_hash = ?")
     .bind(now, now, session.session_token_hash)
     .run();
-  await writeAccessLog(roomId, session.email, "signed_out", request);
+  await writeAccessLog(
+    roomId,
+    session.email,
+    "signed_out",
+    request,
+    "",
+    session.expires_at,
+  );
 }
 
 export async function revokeRoomSessions(roomId: string) {

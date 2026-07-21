@@ -1,6 +1,6 @@
 import {
   authorizeHost,
-  database,
+  endRoomAndPurgeAccess,
   ensureSchema,
   expireIfNeeded,
   getRoom,
@@ -12,11 +12,11 @@ import {
 import {
   ACCESS_LOG_RETENTION_DAYS,
   authorizeViewer,
-  emailDeliveryConfigured,
   hostAccessSnapshot,
   revokeRoomSessions,
   touchViewerSession,
 } from "../../../../lib/access-auth";
+import { supabaseAuthConfigured } from "../../../../lib/supabase-auth";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
 
@@ -34,8 +34,8 @@ export async function GET(request: Request, context: RouteContext) {
   const viewerSession = hostAuthorized ? null : await authorizeViewer(request, roomId);
   if (!hostAuthorized && !viewerSession) {
     return jsonResponse({
-      code: "verification_required",
-      email_delivery_configured: emailDeliveryConfigured(),
+      code: "google_identity_required",
+      supabase_auth_configured: supabaseAuthConfigured(),
       access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
     }, 401);
   }
@@ -64,12 +64,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   await revokeRoomSessions(roomId);
   const accessLog = await hostAccessSnapshot(room);
   const now = Date.now();
-  await database()
-    .prepare(
-      "UPDATE share_rooms SET state_json = '{}', host_token_hash = '', status = 'ended', revision = revision + 1, updated_at = ?, last_activity_at = ?, ended_at = ?, expires_at = ? WHERE room_id = ?",
-    )
-    .bind(now, now, now, now + 5 * 60 * 1_000, roomId)
-    .run();
+  await endRoomAndPurgeAccess(roomId, now);
   return jsonResponse({
     deleted: true,
     room_id: roomId,

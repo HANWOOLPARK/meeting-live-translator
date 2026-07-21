@@ -1,7 +1,6 @@
 import {
   ACCESS_LOG_RETENTION_DAYS,
   authorizeViewer,
-  emailDeliveryConfigured,
 } from "../../../../../../lib/access-auth";
 import {
   ensureSchema,
@@ -10,6 +9,7 @@ import {
   jsonResponse,
   validRoomId,
 } from "../../../../../../lib/relay";
+import { supabaseAuthConfigured } from "../../../../../../lib/supabase-auth";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
 
@@ -25,8 +25,8 @@ export async function GET(request: Request, context: RouteContext) {
   return jsonResponse({
     authenticated: Boolean(session),
     email: session?.email ?? null,
-    email_delivery_configured: emailDeliveryConfigured(),
-    code_expires_in_seconds: 10 * 60,
+    auth_provider: session ? "supabase_google" : null,
+    supabase_auth_configured: supabaseAuthConfigured(),
     access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
   });
 }

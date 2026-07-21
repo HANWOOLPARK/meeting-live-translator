@@ -29,6 +29,12 @@ host app's ignored `.share.env` file.
 - Explicit stop clears relay text immediately.
 - An inactive host expires after 15 minutes and every room has an 8-hour hard
   limit. Expiry is enforced before viewer or host access.
+- Attendees explicitly continue into each room with a Google account. Supabase
+  Auth verifies account ownership; the room server validates the access token
+  before issuing a room-scoped HTTP-only viewer cookie.
+- Verified identity and room-session records are removed from the relay when
+  sharing ends. The installed host may keep the final room access-audit snapshot
+  locally for up to 30 days.
 - Viewer routes are read-only. Room creation and event updates require separate
   bearer secrets.
 

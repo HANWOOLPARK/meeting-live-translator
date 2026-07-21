@@ -16,9 +16,9 @@ const localBindingConfig = {
   compatibility_flags: ["nodejs_compat"],
   vars: {
     MLT_RELAY_CREATE_SECRET: process.env.MLT_RELAY_CREATE_SECRET ?? "",
-    MLT_OTP_SIGNING_SECRET: process.env.MLT_OTP_SIGNING_SECRET ?? "",
-    MLT_OTP_FROM_EMAIL: process.env.MLT_OTP_FROM_EMAIL ?? "",
-    RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
+    MLT_ACCESS_SIGNING_SECRET: process.env.MLT_ACCESS_SIGNING_SECRET ?? "",
+    SUPABASE_URL: process.env.SUPABASE_URL ?? "",
+    SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY ?? "",
   },
   d1_databases: d1
     ? [
