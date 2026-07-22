@@ -10,6 +10,7 @@ export async function GET() {
     configured: Boolean(config),
     url: config?.url ?? null,
     publishable_key: config?.publishableKey ?? null,
-    provider: config ? "google" : null,
+    provider: config ? "supabase" : null,
+    providers: config ? ["google", "email"] : [],
   }, config ? 200 : 503, { "Cache-Control": "no-store" });
 }

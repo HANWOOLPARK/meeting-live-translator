@@ -774,7 +774,7 @@ class ShareRelayManager:
                 except (OSError, UnicodeDecodeError, json.JSONDecodeError):
                     pass
                 safe_message = (
-                    "공유 사이트의 Google 로그인 설정이 필요합니다. "
+                    "공유 사이트의 Supabase 로그인 설정이 필요합니다. "
                     "로컬 원문 전사와 번역은 계속 사용할 수 있습니다."
                     if relay_code == "viewer_supabase_auth_not_configured"
                     else "공유 서버가 요청을 처리하지 못했습니다."
@@ -805,7 +805,7 @@ class ShareRelayManager:
             "viewer_url": self._viewer_url if self.active else None,
             "expires_at": self._expires_at if self.active else None,
             "retention_policy": "delete_on_stop",
-            "access_control": "supabase_google",
+            "access_control": "supabase_identity",
             "access_log_retention_days": SHARE_ACCESS_LOG_RETENTION_DAYS,
             "verified_attendee_count": (
                 _safe_nonnegative_int(self._access_log.get("verified_attendee_count"))

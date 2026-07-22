@@ -59,7 +59,7 @@ The Replay contains sanitized event timing and model output from the real run, s
 - Evidence-linked decisions, action items, open questions, and confirmation needs.
 - Separate caption, one-line media caption, and Radar windows; optional Electron always-on-top transparent overlays.
 - Local append-only sessions, JSONL records, recovery, and exports.
-- Google-verified, read-only participant sharing with room-scoped access auditing and a public verified Replay.
+- Supabase-verified Google or email Magic Link participant sharing with room-scoped access auditing and a public verified Replay.
 - Korean/English UI.
 
 ## Architecture and failure boundaries
@@ -92,9 +92,10 @@ Queues are bounded, Provider calls are asynchronous, and every external failure 
 - API keys remain in the local `.env` or hosted secret configuration and are never returned by diagnostics.
 - `.env`, `.share.env`, sessions, logs, PID files, models, runtimes, and virtual environments are excluded from source and Lite releases.
 - Participant sharing requires explicit consent and displays external-transfer and retention notices.
-- Invite links require a verified Google identity before room data is fetched. The Viewer validates the
-  Supabase access token server-side and then issues a room-scoped HTTP-only session cookie.
-- Supabase Auth verifies Google account ownership but does not store a second WhyKaigi attendee registry.
+- Invite links require a verified Google or email Magic Link identity before room data is fetched. The Viewer
+  validates the Supabase access token server-side and then issues a room-scoped HTTP-only session cookie.
+- Supabase Auth verifies account ownership but does not store a second WhyKaigi attendee registry. Email links
+  return to the invited room, but the user must still explicitly continue into that room.
 - Relayed meeting text, verified identity, and room-session records are deleted from the relay when sharing
   ends. The host may retain a room-scoped local access-audit copy for up to 30 days; those files never
   modify session JSONL.

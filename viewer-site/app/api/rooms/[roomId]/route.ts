@@ -34,7 +34,7 @@ export async function GET(request: Request, context: RouteContext) {
   const viewerSession = hostAuthorized ? null : await authorizeViewer(request, roomId);
   if (!hostAuthorized && !viewerSession) {
     return jsonResponse({
-      code: "google_identity_required",
+      code: "verified_identity_required",
       supabase_auth_configured: supabaseAuthConfigured(),
       access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
     }, 401);

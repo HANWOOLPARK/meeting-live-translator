@@ -59,11 +59,36 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.match(viewer, /provider: "google"/);
   assert.match(viewer, /Google.*Supabase/s);
   assert.match(viewer, /continueRoom: "Continue to this room"/);
-  assert.match(viewer, /hasSupabaseSession \? labels\.continueRoom : labels\.signInGoogle/);
+  assert.match(viewer, /authOperation === "continue" \? labels\.authenticating : labels\.continueRoom/);
+  assert.match(viewer, /signInWithOtp/);
+  assert.match(viewer, /emailRedirectTo: roomRedirectUrl\(roomId\)/);
+  assert.match(viewer, /shouldCreateUser: true/);
+  assert.match(viewer, /type="email"/);
+  assert.match(viewer, /authRequestInFlightRef\.current/);
+  assert.match(viewer, /MAGIC_LINK_COOLDOWN_SECONDS = 60/);
+  assert.match(viewer, /MAGIC_LINK_COOLDOWN_STORAGE_PREFIX/);
+  assert.match(viewer, /window\.localStorage\.setItem\(magicLinkCooldownKey\(email\), String\(Date\.now\(\)\)\)/);
+  assert.match(viewer, /const cooldownSeconds = readMagicLinkCooldown\(email\)/);
+  assert.match(viewer, /magicLinkCooldownSeconds > 0/);
+  assert.match(viewer, /You can resend the sign-in link in \$\{seconds\} seconds\./);
+  assert.match(viewer, /로그인 링크를 \$\{seconds\}초 후에 다시 보낼 수 있습니다\./);
+  assert.match(viewer, /role="status" aria-live="polite"/);
+  assert.match(viewer, /useAnotherAccount: "Use another account"/);
+  assert.match(viewer, /this browser and device/);
+  assert.match(viewer, /verified_identity_required.*google_identity_required/);
   assert.match(
     viewer,
     /if \(!authCode\) \{[\s\S]*?getSession\(\)[\s\S]*?setAccessStage\("signin"\)[\s\S]*?return;[\s\S]*?exchangeCodeForSession\(authCode\)/,
   );
+  const callbackStart = viewer.indexOf("exchangeCodeForSession(authCode)");
+  const callbackEnd = viewer.indexOf("} catch (error)", callbackStart);
+  assert.ok(callbackStart >= 0 && callbackEnd > callbackStart);
+  const callbackFlow = viewer.slice(callbackStart, callbackEnd);
+  assert.match(callbackFlow, /setHasSupabaseSession\(true\)/);
+  assert.match(callbackFlow, /setAccessStage\("signin"\)/);
+  assert.match(callbackFlow, /getSession\(\)/);
+  assert.doesNotMatch(callbackFlow, /exchangeRoomAccess/);
+  assert.match(viewer, /finally \{[\s\S]*?if \(scrubCallbackWhenDone\) scrubOAuthCallbackParams\(\)/);
   assert.match(supabaseBrowser, /detectSessionInUrl: false/);
   assert.match(supabaseBrowser, /flowType: "pkce"/);
   assert.match(viewer, /Shared meeting view/);
@@ -78,7 +103,7 @@ test("viewer room is read-only and keeps the privacy notice visible", async () =
   assert.doesNotMatch(viewer, /audio_url|api_key|provider_settings/);
 });
 
-test("room access uses server-verified Google identity and a D1-only room audit", async () => {
+test("room access uses a server-verified Supabase identity and a D1-only room audit", async () => {
   const [
     roomRoute,
     supabaseRoute,
@@ -103,19 +128,22 @@ test("room access uses server-verified Google identity and a D1-only room audit"
     readFile(new URL("../proxy.ts", import.meta.url), "utf8"),
   ]);
   assert.match(roomRoute, /authorizeViewer/);
-  assert.match(roomRoute, /google_identity_required/);
+  assert.match(roomRoute, /verified_identity_required/);
   assert.match(roomRoute, /endRoomAndPurgeAccess/);
   assert.ok(roomRoute.indexOf("hostAccessSnapshot") < roomRoute.indexOf("endRoomAndPurgeAccess(roomId, now)"));
-  assert.match(supabaseRoute, /verifySupabaseGoogleIdentity/);
+  assert.match(supabaseRoute, /verifySupabaseIdentity/);
   assert.match(supabaseRoute, /writeAccessLog/);
   assert.match(supabaseRoute, /"access_granted"/);
-  assert.match(supabaseRoute, /"supabase_google"/);
+  assert.match(supabaseRoute, /identity\.provider/);
   assert.match(supabaseRoute, /const retainUntil = expiresAt/);
   assert.match(supabaseRoute, /writeAccessLog[\s\S]*expiresAt/);
   assert.match(supabaseRoute, /Set-Cookie/);
   assert.match(supabaseAuth, /\/auth\/v1\/user/);
-  assert.match(supabaseAuth, /email_confirmed_at/);
-  assert.match(supabaseAuth, /identityUsesGoogle/);
+  assert.match(supabaseAuth, /verifiedSupabaseIdentityFromClaims/);
+  assert.match(accessAuthCore, /email_confirmed_at/);
+  assert.match(accessAuthCore, /VerifiedSupabaseProvider = "google" \| "email"/);
+  assert.match(accessAuthCore, /providers\.some/);
+  assert.match(accessAuthCore, /user\.is_anonymous === true/);
   assert.match(supabaseAuth, /MLT_ACCESS_SIGNING_SECRET/);
   assert.match(supabaseAuth, /PUBLISHABLE_KEY_PATTERN = \/\^sb_publishable_/);
   assert.match(supabaseAuth, /PUBLISHABLE_KEY_PATTERN\.test\(publishableKey\)/);

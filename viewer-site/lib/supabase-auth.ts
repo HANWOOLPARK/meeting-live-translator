@@ -1,5 +1,11 @@
 import { env } from "cloudflare:workers";
-import { normalizeEmail } from "./access-auth-core";
+import {
+  type SupabaseUserPayload,
+  type VerifiedSupabaseIdentity,
+  verifiedSupabaseIdentityFromClaims,
+} from "./access-auth-core";
+
+export type { VerifiedSupabaseIdentity, VerifiedSupabaseProvider } from "./access-auth-core";
 
 const SUPABASE_REQUEST_TIMEOUT_MS = 8_000;
 const PUBLISHABLE_KEY_PATTERN = /^sb_publishable_[A-Za-z0-9_-]{20,512}$/;
@@ -10,33 +16,8 @@ type RuntimeEnv = typeof env & {
   SUPABASE_PUBLISHABLE_KEY?: string;
 };
 
-type SupabaseUserPayload = {
-  id?: unknown;
-  email?: unknown;
-  email_confirmed_at?: unknown;
-  app_metadata?: {
-    provider?: unknown;
-    providers?: unknown;
-  } | null;
-  user_metadata?: {
-    full_name?: unknown;
-    name?: unknown;
-  } | null;
-  identities?: Array<{ provider?: unknown }> | null;
-};
-
-export type VerifiedSupabaseIdentity = {
-  email: string;
-  displayName: string;
-  provider: "google";
-};
-
 function runtime() {
   return env as RuntimeEnv;
-}
-
-function cleanText(value: unknown, maximum: number) {
-  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maximum).trim();
 }
 
 function validProjectUrl(value: string) {
@@ -71,19 +52,7 @@ function bearerAccessToken(request: Request) {
   return token.length >= 32 && token.length <= 8_192 ? token : "";
 }
 
-function identityUsesGoogle(user: SupabaseUserPayload) {
-  const providers = Array.isArray(user.app_metadata?.providers)
-    ? user.app_metadata?.providers.map((item) => cleanText(item, 32))
-    : [];
-  const identityProviders = Array.isArray(user.identities)
-    ? user.identities.map((identity) => cleanText(identity.provider, 32))
-    : [];
-  return cleanText(user.app_metadata?.provider, 32) === "google"
-    || providers.includes("google")
-    || identityProviders.includes("google");
-}
-
-export async function verifySupabaseGoogleIdentity(
+export async function verifySupabaseIdentity(
   request: Request,
 ): Promise<VerifiedSupabaseIdentity | null> {
   const config = supabasePublicConfig();
@@ -101,19 +70,5 @@ export async function verifySupabaseGoogleIdentity(
   if (!response.ok) return null;
 
   const user = await response.json() as SupabaseUserPayload;
-  const userId = cleanText(user.id, 64);
-  const email = normalizeEmail(user.email);
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
-    return null;
-  }
-  if (!email || !user.email_confirmed_at || !identityUsesGoogle(user)) return null;
-
-  return {
-    email,
-    displayName: cleanText(
-      user.user_metadata?.full_name ?? user.user_metadata?.name,
-      120,
-    ),
-    provider: "google",
-  };
+  return verifiedSupabaseIdentityFromClaims(user, accessToken);
 }
