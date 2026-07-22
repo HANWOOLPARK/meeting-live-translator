@@ -103,12 +103,17 @@ button { font: inherit; }
 .access-form label { color: #a9b7c7; font-size: 10px; font-weight: 760; }
 .access-form > input { width: 100%; min-height: 50px; padding: 0 14px; color: var(--ink); background: rgba(5,10,18,.58); border: 1px solid rgba(149,166,191,.18); border-radius: 12px; outline: none; font-size: 14px; }
 .access-form > input:focus { border-color: rgba(102,234,217,.52); box-shadow: 0 0 0 3px rgba(102,234,217,.08); }
+.access-form > input[aria-invalid="true"] { border-color: rgba(255,137,148,.58); box-shadow: 0 0 0 3px rgba(255,137,148,.07); }
 .access-form > input.access-code { text-align: center; font-family: "Cascadia Mono", "Consolas", monospace; font-size: 24px; font-weight: 760; letter-spacing: .28em; }
 .access-form > button { min-height: 48px; margin-top: 3px; color: #05110f; background: var(--accent); border: 0; border-radius: 12px; font-size: 12px; font-weight: 820; cursor: pointer; }
 .access-form > button:hover:not(:disabled) { background: #82f2e4; }
 .access-form > button:disabled { cursor: not-allowed; opacity: .45; }
 .access-form > button.access-google { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .access-google span { display: grid; width: 23px; height: 23px; place-items: center; color: #2459c4; background: #fff; border-radius: 50%; font-family: Arial, sans-serif; font-size: 13px; font-weight: 900; }
+.access-divider { display: flex; align-items: center; gap: 12px; margin: 7px 0 2px; color: var(--muted); font-size: 9px; text-align: center; }
+.access-divider::before, .access-divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
+.access-divider span { flex: 0 0 auto; }
+.access-cooldown { margin: 1px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; text-align: center; }
 .access-form > button.access-secondary { min-height: 38px; margin-top: 0; color: var(--soft); background: transparent; border: 1px solid var(--line); }
 .access-email-row { display: flex; margin-bottom: 4px; padding: 10px 11px; align-items: center; justify-content: space-between; gap: 12px; background: rgba(102,234,217,.045); border: 1px solid rgba(102,234,217,.12); border-radius: 10px; }
 .access-email-row span { overflow: hidden; color: #c8e9e4; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
@@ -116,7 +121,9 @@ button { font: inherit; }
 .access-checking { display: flex; min-height: 94px; align-items: center; justify-content: center; gap: 9px; color: var(--soft); font-size: 12px; }
 .access-checking i { width: 9px; height: 9px; background: var(--accent); border-radius: 50%; animation: pulse 1.1s infinite; }
 .access-message, .access-error { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 10px; line-height: 1.5; }
-.access-message { color: #a8e9c8; background: rgba(103,232,165,.06); border: 1px solid rgba(103,232,165,.14); }
+.access-message { display: grid; gap: 4px; color: #a8e9c8; background: rgba(103,232,165,.06); border: 1px solid rgba(103,232,165,.14); }
+.access-message strong { overflow-wrap: anywhere; color: #c9f7df; font-size: 11px; }
+.access-message span { color: #9bc8b0; }
 .access-error { color: #efa1a9; background: rgba(255,137,148,.06); border: 1px solid rgba(255,137,148,.14); }
 .access-privacy { display: grid; gap: 6px; margin-top: 22px; padding: 13px 14px; color: #948765; background: rgba(234,201,120,.05); border: 1px solid rgba(234,201,120,.13); border-radius: 12px; font-size: 9px; line-height: 1.55; }
 .access-privacy strong { color: #d8c37f; font-weight: 720; }

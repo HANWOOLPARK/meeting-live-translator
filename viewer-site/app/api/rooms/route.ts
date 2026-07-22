@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         expires_at: new Date(expiresAt).toISOString(),
         retention_policy: "delete_on_stop",
         idle_timeout_seconds: idleSeconds,
-        access_control: "supabase_google",
+        access_control: "supabase_identity",
         access_log_retention_days: 30,
       },
       201,

@@ -25,7 +25,7 @@ export async function GET(request: Request, context: RouteContext) {
   return jsonResponse({
     authenticated: Boolean(session),
     email: session?.email ?? null,
-    auth_provider: session ? "supabase_google" : null,
+    auth_provider: session ? "supabase_identity" : null,
     supabase_auth_configured: supabaseAuthConfigured(),
     access_log_retention_days: ACCESS_LOG_RETENTION_DAYS,
   });

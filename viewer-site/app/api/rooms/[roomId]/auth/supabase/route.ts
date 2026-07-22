@@ -12,7 +12,7 @@ import {
 } from "../../../../../../lib/relay";
 import {
   supabaseAuthConfigured,
-  verifySupabaseGoogleIdentity,
+  verifySupabaseIdentity,
 } from "../../../../../../lib/supabase-auth";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
@@ -30,8 +30,8 @@ export async function POST(request: Request, context: RouteContext) {
       return jsonResponse({ code: "supabase_auth_unavailable" }, 503);
     }
 
-    const identity = await verifySupabaseGoogleIdentity(request);
-    if (!identity) return jsonResponse({ code: "google_identity_required" }, 401);
+    const identity = await verifySupabaseIdentity(request);
+    if (!identity) return jsonResponse({ code: "verified_identity_required" }, 401);
 
     const now = Date.now();
     const recent = await database()
@@ -70,7 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
       identity.email,
       "access_granted",
       request,
-      "supabase_google",
+      identity.provider,
       expiresAt,
     );
     return jsonResponse(
